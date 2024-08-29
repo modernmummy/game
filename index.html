@@ -49,7 +49,7 @@
         scene.add(light);
 
         // Tunnel Geometry
-        const tunnelGeometry = new THREE.CylinderGeometry(5, 5, 1000, 32, 1, true);
+        const tunnelGeometry = new THREE.CylinderGeometry(5, 5, 2000, 32, 1, true);
         const tunnelMaterial = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.BackSide });
         const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
         scene.add(tunnel);
@@ -63,13 +63,14 @@
 
         // Obstacles
         const obstacles = [];
-        const obstacleSpeed = 0.5; // Slower-moving obstacles
+        const obstacleSpeed = 0.1; // Slower-moving obstacles
 
         function createObstacle() {
             const obstacleGeometry = new THREE.BoxGeometry(1, 1, 1);
             const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
             const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-            obstacle.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * -2000); // Start farther back
+            // Place obstacles further back so they appear before the player
+            obstacle.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * -2000);
             scene.add(obstacle);
             obstacles.push(obstacle);
         }
@@ -99,7 +100,7 @@
             // Restrict player movement within bounds
             player.position.x = Math.max(-5, Math.min(5, player.position.x));
             player.position.y = Math.max(-5, Math.min(5, player.position.y));
-            player.position.z = Math.max(-50, Math.min(50, player.position.z));
+            player.position.z = Math.max(-1000, Math.min(1000, player.position.z));
         });
 
         // Game Over
@@ -126,35 +127,10 @@
         function animate() {
             animationId = requestAnimationFrame(animate);
 
-            // Move tunnel and obstacles
+            // Move obstacles
             obstacles.forEach(obstacle => {
                 obstacle.position.z += obstacleSpeed;
                 if (obstacle.position.z > player.position.z + 50) {
                     obstacle.position.z = player.position.z - 1000;
                     obstacle.position.x = Math.random() * 10 - 5;
-                    obstacle.position.y = Math.random() * 10 - 5;
-                }
-            });
-
-            // Check for collisions
-            checkCollision();
-
-            renderer.render(scene, camera);
-        }
-
-        // Set camera position
-        camera.position.z = 10;
-        camera.position.y = 0;
-
-        // Handle window resizing
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Start the animation loop
-        animate();
-    </script>
-</body>
-</html>
+                    obstacle.position.y = Math.random() 
