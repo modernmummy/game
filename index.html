@@ -63,11 +63,13 @@
 
         // Obstacles
         const obstacles = [];
+        const obstacleSpeed = 0.5; // Slower-moving obstacles
+
         function createObstacle() {
             const obstacleGeometry = new THREE.BoxGeometry(1, 1, 1);
             const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
             const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-            obstacle.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * -1000);
+            obstacle.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * -2000); // Start farther back
             scene.add(obstacle);
             obstacles.push(obstacle);
         }
@@ -77,21 +79,27 @@
         }
 
         // Player Movement
+        const movementSpeed = 0.5;
         document.addEventListener('keydown', (event) => {
             switch (event.code) {
                 case 'ArrowUp':
-                    player.position.z -= 1;
+                    player.position.z -= movementSpeed;
                     break;
                 case 'ArrowDown':
-                    player.position.z += 1;
+                    player.position.z += movementSpeed;
                     break;
                 case 'ArrowLeft':
-                    player.position.x -= 1;
+                    player.position.x -= movementSpeed;
                     break;
                 case 'ArrowRight':
-                    player.position.x += 1;
+                    player.position.x += movementSpeed;
                     break;
             }
+
+            // Restrict player movement within bounds
+            player.position.x = Math.max(-5, Math.min(5, player.position.x));
+            player.position.y = Math.max(-5, Math.min(5, player.position.y));
+            player.position.z = Math.max(-50, Math.min(50, player.position.z));
         });
 
         // Game Over
@@ -120,7 +128,7 @@
 
             // Move tunnel and obstacles
             obstacles.forEach(obstacle => {
-                obstacle.position.z += 1;
+                obstacle.position.z += obstacleSpeed;
                 if (obstacle.position.z > player.position.z + 50) {
                     obstacle.position.z = player.position.z - 1000;
                     obstacle.position.x = Math.random() * 10 - 5;
