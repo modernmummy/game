@@ -20,6 +20,8 @@
         const PLAYER_SPEED = 5;
         const ENEMY_SPEED = 2;
         const ENEMY_DAMAGE_RADIUS = 0.5; // Radius for collision detection
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
 
         // Initialize the scene
         function init() {
@@ -49,6 +51,7 @@
             // Event listeners
             document.addEventListener('keydown', onKeyDown);
             document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('click', onClick);
 
             // Resize handler
@@ -66,14 +69,24 @@
             keys[event.code] = false;
         }
 
+        function onMouseMove(event) {
+            // Normalize mouse coordinates
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+
         function onClick(event) {
             shootBullet();
         }
 
         function shootBullet() {
+            raycaster.updateMatrixWorld(); // Update the raycaster matrix
+            raycaster.ray.origin.copy(camera.position);
+            raycaster.ray.direction.copy(camera.getWorldDirection(new THREE.Vector3()));
+
             let bullet = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), new THREE.MeshBasicMaterial({ color: 0x0000ff }));
             bullet.position.copy(camera.position);
-            bullet.velocity = new THREE.Vector3().copy(camera.getWorldDirection(new THREE.Vector3())).multiplyScalar(BULLET_SPEED);
+            bullet.velocity = raycaster.ray.direction.clone().multiplyScalar(BULLET_SPEED);
             bullets.push(bullet);
             scene.add(bullet);
         }
