@@ -3,143 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D FPS Game</title>
+    <title>Hardest Game</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
     </style>
 </head>
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        let scene, camera, renderer, player;
-        let bullets = [];
-        let enemies = [];
-        let keys = {};
-        const BULLET_SPEED = 10;
-        const PLAYER_SPEED = 5;
-        const ENEMY_SPEED = 2;
-        const ENEMY_DAMAGE_RADIUS = 0.5; // Radius for collision detection
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
+        // Game variables
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const WIDTH = 800;
+        const HEIGHT = 600;
+        const DOT_SIZE = 20;
+        const OBSTACLE_SIZE = 30;
+        const OBSTACLE_SPEED = 3;
+        let dotX = WIDTH / 2;
+        let dotY = HEIGHT / 2;
+        let obstacles = [];
+        let score = 0;
+        let gameOver = false;
 
-        // Initialize the scene
-        function init() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
+        canvas.width = WIDTH;
+        canvas.height = HEIGHT;
+        document.body.appendChild(canvas);
 
-            // Create player
-            player = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
-            player.position.y = 1;
-            scene.add(player);
+        // Event listeners for controls
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'ArrowUp') dotY -= 10;
+            if (event.code === 'ArrowDown') dotY += 10;
+            if (event.code === 'ArrowLeft') dotX -= 10;
+            if (event.code === 'ArrowRight') dotX += 10;
+        });
 
-            // Create enemies
-            for (let i = 0; i < 5; i++) {
-                let enemy = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-                enemy.position.set(Math.random() * 10 - 5, 1, Math.random() * 10 - 5);
-                enemies.push(enemy);
-                scene.add(enemy);
-            }
-
-            // Setup camera
-            camera.position.set(0, 1, 5);
-            camera.lookAt(player.position);
-
-            // Event listeners
-            document.addEventListener('keydown', onKeyDown);
-            document.addEventListener('keyup', onKeyUp);
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('click', onClick);
-
-            // Resize handler
-            window.addEventListener('resize', onWindowResize, false);
-
-            // Start the render loop
-            animate();
+        // Function to generate obstacles
+        function generateObstacle() {
+            const x = Math.random() * (WIDTH - OBSTACLE_SIZE);
+            obstacles.push({ x, y: -OBSTACLE_SIZE });
         }
 
-        function onKeyDown(event) {
-            keys[event.code] = true;
-        }
+        // Function to update game state
+        function update() {
+            if (gameOver) return;
 
-        function onKeyUp(event) {
-            keys[event.code] = false;
-        }
-
-        function onMouseMove(event) {
-            // Normalize mouse coordinates
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        }
-
-        function onClick(event) {
-            shootBullet();
-        }
-
-        function shootBullet() {
-            // Set up raycaster
-            raycaster.updateMatrixWorld(); // Update the raycaster matrix
-            raycaster.ray.origin.copy(camera.position);
-            raycaster.ray.direction.copy(camera.getWorldDirection(new THREE.Vector3()));
-
-            let bullet = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), new THREE.MeshBasicMaterial({ color: 0x0000ff }));
-            bullet.position.copy(camera.position);
-            bullet.velocity = raycaster.ray.direction.clone().multiplyScalar(BULLET_SPEED);
-            bullets.push(bullet);
-            scene.add(bullet);
-        }
-
-        function detectCollisions() {
-            bullets.forEach((bullet, bulletIndex) => {
-                enemies.forEach((enemy, enemyIndex) => {
-                    const distance = bullet.position.distanceTo(enemy.position);
-                    if (distance < ENEMY_DAMAGE_RADIUS) {
-                        // Handle collision
-                        scene.remove(enemy);
-                        enemies.splice(enemyIndex, 1);
-                        scene.remove(bullet);
-                        bullets.splice(bulletIndex, 1);
-                    }
-                });
+            // Move obstacles
+            obstacles.forEach(obstacle => {
+                obstacle.y += OBSTACLE_SPEED;
             });
-        }
 
-        function animate() {
-            requestAnimationFrame(animate);
+            // Remove off-screen obstacles
+            obstacles = obstacles.filter(obstacle => obstacle.y < HEIGHT);
 
-            // Player controls
-            if (keys['KeyW']) player.position.z -= PLAYER_SPEED * 0.1;
-            if (keys['KeyS']) player.position.z += PLAYER_SPEED * 0.1;
-            if (keys['KeyA']) player.position.x -= PLAYER_SPEED * 0.1;
-            if (keys['KeyD']) player.position.x += PLAYER_SPEED * 0.1;
-
-            // Update bullets
-            bullets.forEach((bullet, index) => {
-                bullet.position.add(bullet.velocity.clone().multiplyScalar(0.1));
-                if (bullet.position.length() > 50) {
-                    scene.remove(bullet);
-                    bullets.splice(index, 1);
+            // Check collision
+            obstacles.forEach(obstacle => {
+                if (
+                    dotX < obstacle.x + OBSTACLE_SIZE &&
+                    dotX + DOT_SIZE > obstacle.x &&
+                    dotY < obstacle.y + OBSTACLE_SIZE &&
+                    dotY + DOT_SIZE > obstacle.y
+                ) {
+                    gameOver = true;
                 }
             });
 
-            // Update enemies
-            enemies.forEach(enemy => {
-                let direction = player.position.clone().sub(enemy.position).normalize();
-                enemy.position.add(direction.multiplyScalar(ENEMY_SPEED * 0.1));
+            // Increase score
+            score++;
+            if (score % 100 === 0) {
+                generateObstacle();
+            }
+        }
+
+        // Function to draw everything
+        function draw() {
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+            // Draw dot
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(dotX, dotY, DOT_SIZE, DOT_SIZE);
+
+            // Draw obstacles
+            ctx.fillStyle = 'red';
+            obstacles.forEach(obstacle => {
+                ctx.fillRect(obstacle.x, obstacle.y, OBSTACLE_SIZE, OBSTACLE_SIZE);
             });
 
-            // Detect collisions between bullets and enemies
-            detectCollisions();
+            // Draw score
+            ctx.fillStyle = 'black';
+            ctx.font = '24px Arial';
+            ctx.fillText('Score: ' + score, 10, 30);
 
-            // Render scene
-            renderer.render(scene, camera);
+            // Draw game over message
+            if (gameOver) {
+                ctx.fillStyle = 'black';
+                ctx.font = '48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Over', WIDTH / 2, HEIGHT / 2);
+            }
         }
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        // Main game loop
+        function gameLoop() {
+            if (gameOver) return;
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
         }
+
+        // Start the game
+        generateObstacle(); // Initial obstacle
+        gameLoop();
+    </script>
+</body>
+</html>
