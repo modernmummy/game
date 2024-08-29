@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Shooter Game</title>
+    <title>3D Rooftop Shooter Game</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
@@ -19,46 +19,50 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const player = {
-            position: new THREE.Vector3(0, 1, 10),
-            radius: 10,
-            angle: 0,
-            speed: 0.1,
-            moveForward: false,
-            moveBackward: false,
-            mouseSensitivity: 0.002,
-            forwardBackward: 0
-        };
+        // Create rooftop
+        const roofGeometry = new THREE.BoxGeometry(30, 1, 30);
+        const roofMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
+        const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+        roof.position.y = 1;
+        scene.add(roof);
 
-        // Add a sphere as the central point
-        const geometry = new THREE.SphereGeometry(1, 32, 32);
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const centralPoint = new THREE.Mesh(geometry, material);
-        scene.add(centralPoint);
+        // Create city background
+        const cityTexture = new THREE.TextureLoader().load('https://example.com/city_background.jpg');
+        const cityMaterial = new THREE.MeshBasicMaterial({ map: cityTexture, side: THREE.BackSide });
+        const cityGeometry = new THREE.CubeGeometry(1000, 1000, 1);
+        const city = new THREE.Mesh(cityGeometry, cityMaterial);
+        city.position.z = -500;
+        scene.add(city);
 
-        // Enemies and projectiles
+        // Create player (shooter)
+        const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+        const player = new THREE.Mesh(playerGeometry, playerMaterial);
+        player.position.set(0, 1.5, 5);
+        scene.add(player);
+
+        // Create enemies
         const enemies = [];
-        const projectiles = [];
-
         function createEnemy() {
-            const geometry = new THREE.BoxGeometry(1, 1, 1);
-            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            const enemy = new THREE.Mesh(geometry, material);
+            const enemyGeometry = new THREE.BoxGeometry(1, 1, 1);
+            const enemyMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
             enemy.position.set(Math.random() * 20 - 10, 1, Math.random() * 20 - 10);
             scene.add(enemy);
             enemies.push(enemy);
         }
 
         function createProjectile(position, direction) {
-            const geometry = new THREE.SphereGeometry(0.2, 8, 8);
-            const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-            const projectile = new THREE.Mesh(geometry, material);
+            const projectileGeometry = new THREE.SphereGeometry(0.2, 8, 8);
+            const projectileMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            const projectile = new THREE.Mesh(projectileGeometry, projectileMaterial);
             projectile.position.copy(position);
             projectile.userData = { direction: direction.clone() };
             scene.add(projectile);
             projectiles.push(projectile);
         }
 
+        const projectiles = [];
         function updateProjectiles() {
             projectiles.forEach(projectile => {
                 projectile.position.add(projectile.userData.direction.clone().multiplyScalar(0.5));
@@ -71,7 +75,6 @@
 
         function updateEnemies() {
             enemies.forEach(enemy => {
-                // Simple enemy movement
                 const direction = camera.position.clone().sub(enemy.position).normalize();
                 enemy.position.add(direction.multiplyScalar(0.05));
                 if (enemy.position.distanceTo(camera.position) < 1) {
@@ -82,19 +85,26 @@
         }
 
         function handleKeyboard(event) {
-            switch(event.code) {
-                case 'ArrowUp': player.moveForward = event.type === 'keydown'; break;
-                case 'ArrowDown': player.moveBackward = event.type === 'keydown'; break;
+            switch (event.code) {
+                case 'ArrowUp': player.position.z -= 0.5; break;
+                case 'ArrowDown': player.position.z += 0.5; break;
+                case 'ArrowLeft': player.position.x -= 0.5; break;
+                case 'ArrowRight': player.position.x += 0.5; break;
             }
         }
 
         function handleMouseMove(event) {
-            player.angle += (event.movementX / window.innerWidth) * 2 * Math.PI * player.mouseSensitivity;
-            player.radius = Math.max(5, Math.min(player.radius - (event.movementY * player.mouseSensitivity), 50));
+            const sensitivity = 0.002;
+            const angleX = (event.movementX / window.innerWidth) * 2 * Math.PI * sensitivity;
+            const angleY = (event.movementY / window.innerHeight) * 2 * Math.PI * sensitivity;
+            camera.position.x += Math.sin(angleX) * 0.1;
+            camera.position.z += Math.cos(angleX) * 0.1;
+            camera.position.y += angleY * 0.1;
+            camera.lookAt(roof.position);
         }
 
         function shoot() {
-            const direction = new THREE.Vector3().subVectors(camera.position, centralPoint.position).normalize();
+            const direction = new THREE.Vector3().subVectors(camera.position, player.position).normalize();
             createProjectile(camera.position, direction);
         }
 
@@ -102,22 +112,22 @@
         for (let i = 0; i < 5; i++) createEnemy();
 
         document.addEventListener('keydown', handleKeyboard);
-        document.addEventListener('keyup', handleKeyboard);
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('click', shoot);
 
+        let gameTime = 0;
         function animate() {
             requestAnimationFrame(animate);
 
-            // Update camera position
-            player.angle += (player.moveForward - player.moveBackward) * 0.05;
-            player.radius += (player.moveForward - player.moveBackward) * 0.05;
-            camera.position.x = player.radius * Math.cos(player.angle);
-            camera.position.z = player.radius * Math.sin(player.angle);
-            camera.position.y = Math.max(2, Math.min(camera.position.y, 10));
-            camera.lookAt(centralPoint.position);
+            // Increase difficulty over time
+            gameTime += 0.01;
+            if (gameTime > 1 && enemies.length < 20) {
+                for (let i = 0; i < Math.floor(gameTime); i++) {
+                    createEnemy();
+                }
+                gameTime = 0;
+            }
 
-            // Update enemies and projectiles
             updateEnemies();
             updateProjectiles();
 
@@ -131,6 +141,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+        // Start the animation loop
         animate();
     </script>
 </body>
