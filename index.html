@@ -85,6 +85,10 @@
 
             let score = 0;
             let gameInterval;
+            let platforms = [];
+            let missiles = [];
+            let player = { x: 50, y: 0, width: 30, height: 30, dy: 0, jumpPower: -15 };
+            let keys = {};
 
             function resizeCanvas() {
                 canvas.width = window.innerWidth;
@@ -97,14 +101,100 @@
                 scoreElement.textContent = `Score: ${score}`;
                 gameOverElement.style.display = 'none';
 
+                player.x = canvas.width / 2;
+                player.y = canvas.height / 2;
+                player.dy = 0;
+
+                platforms = [];
+                missiles = [];
+
+                createPlatforms();
                 gameInterval = setInterval(updateGame, 1000 / 60); // 60 FPS
             }
 
+            function createPlatforms() {
+                for (let i = 0; i < 5; i++) {
+                    platforms.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        width: 100,
+                        height: 10
+                    });
+                }
+            }
+
             function updateGame() {
-                // Game logic and rendering will go here
-                // For demonstration, increment the score
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Player Movement
+                if (keys['ArrowLeft']) player.x -= 5;
+                if (keys['ArrowRight']) player.x += 5;
+                if (keys[' ']) jump();
+
+                player.y += player.dy;
+                player.dy += 1; // Gravity
+
+                // Check for collisions with platforms
+                platforms.forEach(platform => {
+                    if (player.x < platform.x + platform.width &&
+                        player.x + player.width > platform.x &&
+                        player.y + player.height > platform.y &&
+                        player.y + player.height < platform.y + platform.height) {
+                        player.dy = 0;
+                        player.y = platform.y - player.height;
+                    }
+                });
+
+                // Generate new missiles
+                if (Math.random() < 0.01) {
+                    missiles.push({
+                        x: Math.random() * canvas.width,
+                        y: 0,
+                        width: 10,
+                        height: 30,
+                        speed: 3
+                    });
+                }
+
+                // Update and render missiles
+                missiles.forEach((missile, index) => {
+                    missile.y += missile.speed;
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(missile.x, missile.y, missile.width, missile.height);
+
+                    // Check for collision with player
+                    if (player.x < missile.x + missile.width &&
+                        player.x + player.width > missile.x &&
+                        player.y < missile.y + missile.height &&
+                        player.y + player.height > missile.y) {
+                        endGame();
+                    }
+
+                    // Remove off-screen missiles
+                    if (missile.y > canvas.height) {
+                        missiles.splice(index, 1);
+                    }
+                });
+
+                // Render platforms
+                platforms.forEach(platform => {
+                    ctx.fillStyle = 'gray';
+                    ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                });
+
+                // Render player
+                ctx.fillStyle = 'blue';
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+
+                // Update score
                 score++;
                 scoreElement.textContent = `Score: ${score}`;
+            }
+
+            function jump() {
+                if (player.dy === 0) {
+                    player.dy = player.jumpPower;
+                }
             }
 
             function endGame() {
@@ -116,6 +206,15 @@
             function restartGame() {
                 startGame();
             }
+
+            // Handle key presses
+            window.addEventListener('keydown', (e) => {
+                keys[e.key] = true;
+            });
+
+            window.addEventListener('keyup', (e) => {
+                keys[e.key] = false;
+            });
 
             // Resize the canvas on window resize
             window.addEventListener('resize', resizeCanvas);
