@@ -49,7 +49,7 @@
         scene.add(light);
 
         // Tunnel Geometry
-        const tunnelGeometry = new THREE.CylinderGeometry(5, 5, 2000, 32, 1, true);
+        const tunnelGeometry = new THREE.CylinderGeometry(10, 10, 2000, 32, 1, true);
         const tunnelMaterial = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.BackSide });
         const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
         scene.add(tunnel);
@@ -69,13 +69,12 @@
             const obstacleGeometry = new THREE.BoxGeometry(1, 1, 1);
             const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
             const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-            // Place obstacles further back so they appear before the player
-            obstacle.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * -2000);
+            obstacle.position.set(Math.random() * 20 - 10, Math.random() * 20 - 10, Math.random() * -4000); // More visible obstacles
             scene.add(obstacle);
             obstacles.push(obstacle);
         }
 
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 100; i++) {
             createObstacle();
         }
 
@@ -98,9 +97,9 @@
             }
 
             // Restrict player movement within bounds
-            player.position.x = Math.max(-5, Math.min(5, player.position.x));
-            player.position.y = Math.max(-5, Math.min(5, player.position.y));
-            player.position.z = Math.max(-1000, Math.min(1000, player.position.z));
+            player.position.x = Math.max(-10, Math.min(10, player.position.x));
+            player.position.y = Math.max(-10, Math.min(10, player.position.y));
+            player.position.z = Math.max(-2000, Math.min(2000, player.position.z));
         });
 
         // Game Over
@@ -130,7 +129,27 @@
             // Move obstacles
             obstacles.forEach(obstacle => {
                 obstacle.position.z += obstacleSpeed;
-                if (obstacle.position.z > player.position.z + 50) {
-                    obstacle.position.z = player.position.z - 1000;
-                    obstacle.position.x = Math.random() * 10 - 5;
-                    obstacle.position.y = Math.random() 
+                if (obstacle.position.z > player.position.z + 100) {
+                    obstacle.position.z = player.position.z - 2000;
+                    obstacle.position.x = Math.random() * 20 - 10;
+                    obstacle.position.y = Math.random() * 20 - 10;
+                }
+            });
+
+            // Check for collisions
+            checkCollision();
+
+            renderer.render(scene, camera);
+        }
+
+        // Set camera position and orientation
+        camera.position.z = 0;
+        camera.position.y = 0;
+        camera.position.x = 0;
+        camera.lookAt(0, 0, -1); // Look towards the tunnel
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+      
