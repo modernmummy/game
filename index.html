@@ -1,183 +1,120 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fighter Jet Game</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: #000; /* Black background for space */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+using UnityEngine;
+
+public class PlayerController : MonoBehaviour
+{
+    public float speed = 5f;
+    public float mouseSensitivity = 2f;
+    public Transform playerCamera;
+    private float xRotation = 0f;
+    private CharacterController controller;
+
+    void Start()
+    {
+        controller = GetComponent<CharacterController>();
+    }
+
+    void Update()
+    {
+        // Mouse look
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+
+        xRotation -= mouseY;
+        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+        playerCamera.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+        transform.Rotate(Vector3.up * mouseX);
+
+        // Movement
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
+        Vector3 move = transform.right * horizontal + transform.forward * vertical;
+        controller.Move(move * speed * Time.deltaTime);
+    }
+}
+            using UnityEngine;
+
+public class Weapon : MonoBehaviour
+{
+    public GameObject projectilePrefab;
+    public Transform firePoint;
+    public float fireRate = 0.1f;
+    public float grenadeForce = 10f;
+    private float nextFireTime = 0f;
+
+    void Update()
+    {
+        if (Input.GetMouseButton(1) && Time.time > nextFireTime) // Right click
+        {
+            nextFireTime = Time.time + fireRate;
+            Shoot();
         }
-
-        canvas {
-            background: #000; /* Black background for space */
-            border: 2px solid #fff;
+        if (Input.GetMouseButtonDown(0)) // Left click
+        {
+            ThrowGrenade();
         }
-    </style>
-</head>
-<body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
+    }
 
-            // Game constants
-            const JET_WIDTH = 50;
-            const JET_HEIGHT = 30;
-            const MISSILE_WIDTH = 5;
-            const MISSILE_HEIGHT = 20;
-            const MISSILE_SPEED = 10;
-            const ENEMY_WIDTH = 50;
-            const ENEMY_HEIGHT = 30;
-            const ENEMY_SPEED = 2;
-            const INITIAL_ENEMY_COUNT = 3;
-            const SCORE_INCREMENT = 10;
-            const ENEMY_INTERVAL = 150; // Frames between new enemies
+    void Shoot()
+    {
+        Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
+    }
 
-            // Game variables
-            let jetX = canvas.width / 2 - JET_WIDTH / 2;
-            let jetY = canvas.height - JET_HEIGHT - 10;
-            let jetSpeed = 20;
-            let missiles = [];
-            let enemies = [];
-            let score = 0;
-            let gameOver = false;
-            let enemyTimer = 0;
+    void ThrowGrenade()
+    {
+        // Example grenade implementation
+        GameObject grenade = Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
+        Rigidbody rb = grenade.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.AddForce(playerCamera.forward * grenadeForce, ForceMode.VelocityChange);
+        }
+    }
+}
+            using UnityEngine;
+using UnityEngine.AI;
 
-            function drawJet() {
-                ctx.fillStyle = 'blue';
-                ctx.fillRect(jetX, jetY, JET_WIDTH, JET_HEIGHT);
-            }
+public class EnemyAI : MonoBehaviour
+{
+    public Transform player;
+    public float attackRange = 5f;
+    private NavMeshAgent agent;
 
-            function drawMissiles() {
-                ctx.fillStyle = 'red';
-                missiles.forEach(missile => {
-                    ctx.fillRect(missile.x, missile.y, MISSILE_WIDTH, MISSILE_HEIGHT);
-                });
-            }
+    void Start()
+    {
+        agent = GetComponent<NavMeshAgent>();
+    }
 
-            function drawEnemies() {
-                ctx.fillStyle = 'green';
-                enemies.forEach(enemy => {
-                    ctx.fillRect(enemy.x, enemy.y, ENEMY_WIDTH, ENEMY_HEIGHT);
-                });
-            }
+    void Update()
+    {
+        float distance = Vector3.Distance(player.position, transform.position);
+        if (distance <= attackRange)
+        {
+            agent.SetDestination(player.position);
+            // Add attack logic here
+        }
+    }
+}
+            using UnityEngine;
 
-            function drawScore() {
-                ctx.font = '20px Arial';
-                ctx.fillStyle = 'white';
-                ctx.fillText(`Score: ${score}`, 10, 20);
-            }
+public class Projectile : MonoBehaviour
+{
+    public float speed = 10f;
+    public float lifetime = 2f;
+    public float damage = 10f;
 
-            function createEnemy() {
-                enemies.push({
-                    x: Math.random() * (canvas.width - ENEMY_WIDTH),
-                    y: -ENEMY_HEIGHT
-                });
-            }
+    void Start()
+    {
+        Destroy(gameObject, lifetime);
+    }
 
-            function updateMissiles() {
-                missiles.forEach(missile => {
-                    missile.y -= MISSILE_SPEED;
-                });
+    void Update()
+    {
+        transform.Translate(Vector3.forward * speed * Time.deltaTime);
+    }
 
-                // Remove off-screen missiles
-                missiles = missiles.filter(missile => missile.y + MISSILE_HEIGHT > 0);
-            }
-
-            function updateEnemies() {
-                enemies.forEach(enemy => {
-                    enemy.y += ENEMY_SPEED + Math.floor(score / 100); // Increase speed as score increases
-                });
-
-                // Remove off-screen enemies
-                enemies = enemies.filter(enemy => enemy.y < canvas.height);
-
-                if (enemyTimer <= 0 && !gameOver) {
-                    createEnemy();
-                    enemyTimer = ENEMY_INTERVAL - Math.floor(score / 100); // Increase interval reduction as score increases
-                }
-
-                enemyTimer--;
-            }
-
-            function detectCollisions() {
-                missiles.forEach((missile, missileIndex) => {
-                    enemies.forEach((enemy, enemyIndex) => {
-                        if (missile.x < enemy.x + ENEMY_WIDTH &&
-                            missile.x + MISSILE_WIDTH > enemy.x &&
-                            missile.y < enemy.y + ENEMY_HEIGHT &&
-                            missile.y + MISSILE_HEIGHT > enemy.y) {
-                                // Remove missile and enemy on collision
-                                missiles.splice(missileIndex, 1);
-                                enemies.splice(enemyIndex, 1);
-                                score += SCORE_INCREMENT;
-                        }
-                    });
-                });
-
-                enemies.forEach(enemy => {
-                    if (jetX < enemy.x + ENEMY_WIDTH &&
-                        jetX + JET_WIDTH > enemy.x &&
-                        jetY < enemy.y + ENEMY_HEIGHT &&
-                        jetY + JET_HEIGHT > enemy.y) {
-                            gameOver = true;
-                    }
-                });
-            }
-
-            function update() {
-                if (gameOver) return;
-
-                updateMissiles();
-                updateEnemies();
-                detectCollisions();
-
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                drawJet();
-                drawMissiles();
-                drawEnemies();
-                drawScore();
-
-                requestAnimationFrame(update);
-            }
-
-            // Handle user input
-            function handleKeyDown(e) {
-                if (e.key === 'ArrowLeft') {
-                    jetX = Math.max(0, jetX - jetSpeed);
-                } else if (e.key === 'ArrowRight') {
-                    jetX = Math.min(canvas.width - JET_WIDTH, jetX + jetSpeed);
-                } else if (e.key === ' ') {
-                    if (!gameOver) {
-                        missiles.push({ x: jetX + JET_WIDTH / 2 - MISSILE_WIDTH / 2, y: jetY });
-                    } else {
-                        // Restart game if space is pressed after game over
-                        enemies = [];
-                        missiles = [];
-                        jetX = canvas.width / 2 - JET_WIDTH / 2;
-                        jetY = canvas.height - JET_HEIGHT - 10;
-                        score = 0;
-                        gameOver = false;
-                        enemyTimer = 0;
-                        update();
-                    }
-                }
-            }
-
-            document.addEventListener('keydown', handleKeyDown);
-
-            // Start the game
-            update();
-        });
-    </script>
-</body>
-</html>
+    void OnCollisionEnter(Collision collision)
+    {
+        // Check for damage logic here
+        Destroy(gameObject);
+    }
+}
