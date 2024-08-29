@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tunnel Rush</title>
+    <title>Ping Pong Game</title>
     <style>
         body { margin: 0; overflow: hidden; }
-        canvas { display: block; }
+        canvas { display: block; background: #000; }
         #gameOverOverlay {
             position: absolute;
             top: 0;
@@ -35,121 +35,146 @@
             <button onclick="restartGame()">Restart</button>
         </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <canvas id="gameCanvas"></canvas>
     <script>
-        // Basic setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-        // Basic light
-        const light = new THREE.AmbientLight(0x404040); // Soft white light
-        scene.add(light);
+        // Paddle settings
+        const paddleWidth = 10;
+        const paddleHeight = 100;
+        const paddleSpeed = 5;
 
-        // Tunnel Geometry
-        const tunnelGeometry = new THREE.CylinderGeometry(10, 10, 2000, 32, 1, true);
-        const tunnelMaterial = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.BackSide });
-        const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
-        scene.add(tunnel);
+        // Ball settings
+        const ballSize = 10;
+        let ballSpeedX = 5;
+        let ballSpeedY = 3;
+        let difficultyIncreaseInterval = 5; // Increase difficulty every 5 hits
+        let hitCount = 0;
 
-        // Player
-        const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
-        const playerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const player = new THREE.Mesh(playerGeometry, playerMaterial);
-        player.position.z = 0;
-        scene.add(player);
+        // Paddle and Ball positions
+        const playerPaddle = {
+            x: 10,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight
+        };
 
-        // Obstacles
-        const obstacles = [];
-        const obstacleSpeed = 0.1; // Slower-moving obstacles
+        const opponentPaddle = {
+            x: canvas.width - 20,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight
+        };
 
-        function createObstacle() {
-            const obstacleGeometry = new THREE.BoxGeometry(1, 1, 1);
-            const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-            obstacle.position.set(Math.random() * 20 - 10, Math.random() * 20 - 10, Math.random() * -4000); // More visible obstacles
-            scene.add(obstacle);
-            obstacles.push(obstacle);
-        }
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            size: ballSize
+        };
 
-        for (let i = 0; i < 100; i++) {
-            createObstacle();
-        }
+        // Game state
+        let isGameOver = false;
 
-        // Player Movement
-        const movementSpeed = 0.5;
+        // Event listener for paddle movement
         document.addEventListener('keydown', (event) => {
-            switch (event.code) {
-                case 'ArrowUp':
-                    player.position.z -= movementSpeed;
-                    break;
-                case 'ArrowDown':
-                    player.position.z += movementSpeed;
-                    break;
-                case 'ArrowLeft':
-                    player.position.x -= movementSpeed;
-                    break;
-                case 'ArrowRight':
-                    player.position.x += movementSpeed;
-                    break;
+            if (event.code === 'ArrowUp') {
+                playerPaddle.y = Math.max(0, playerPaddle.y - paddleSpeed);
+            } else if (event.code === 'ArrowDown') {
+                playerPaddle.y = Math.min(canvas.height - paddleHeight, playerPaddle.y + paddleSpeed);
             }
-
-            // Restrict player movement within bounds
-            player.position.x = Math.max(-10, Math.min(10, player.position.x));
-            player.position.y = Math.max(-10, Math.min(10, player.position.y));
-            player.position.z = Math.max(-2000, Math.min(2000, player.position.z));
         });
-
-        // Game Over
-        function checkCollision() {
-            obstacles.forEach(obstacle => {
-                const distance = player.position.distanceTo(obstacle.position);
-                if (distance < 1) {
-                    showGameOver();
-                }
-            });
-        }
-
-        function showGameOver() {
-            document.getElementById('gameOverOverlay').style.display = 'flex';
-            cancelAnimationFrame(animationId); // Stop the animation loop
-        }
 
         function restartGame() {
             location.reload(); // Reload the page to restart the game
         }
 
-        // Animation Loop
-        let animationId;
-        function animate() {
-            animationId = requestAnimationFrame(animate);
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Move obstacles
-            obstacles.forEach(obstacle => {
-                obstacle.position.z += obstacleSpeed;
-                if (obstacle.position.z > player.position.z + 100) {
-                    obstacle.position.z = player.position.z - 2000;
-                    obstacle.position.x = Math.random() * 20 - 10;
-                    obstacle.position.y = Math.random() * 20 - 10;
-                }
-            });
+            // Draw paddles
+            ctx.fillStyle = 'white';
+            ctx.fillRect(playerPaddle.x, playerPaddle.y, playerPaddle.width, playerPaddle.height);
+            ctx.fillRect(opponentPaddle.x, opponentPaddle.y, opponentPaddle.width, opponentPaddle.height);
 
-            // Check for collisions
-            checkCollision();
-
-            renderer.render(scene, camera);
+            // Draw ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.closePath();
         }
 
-        // Set camera position and orientation
-        camera.position.z = 0;
-        camera.position.y = 0;
-        camera.position.x = 0;
-        camera.lookAt(0, 0, -1); // Look towards the tunnel
+        function update() {
+            if (isGameOver) return;
+
+            // Update ball position
+            ball.x += ballSpeedX;
+            ball.y += ballSpeedY;
+
+            // Ball collision with top and bottom walls
+            if (ball.y - ball.size <= 0 || ball.y + ball.size >= canvas.height) {
+                ballSpeedY = -ballSpeedY;
+            }
+
+            // Ball collision with paddles
+            if (
+                (ball.x - ball.size <= playerPaddle.x + playerPaddle.width &&
+                ball.y >= playerPaddle.y &&
+                ball.y <= playerPaddle.y + playerPaddle.height) ||
+                (ball.x + ball.size >= opponentPaddle.x &&
+                ball.y >= opponentPaddle.y &&
+                ball.y <= opponentPaddle.y + opponentPaddle.height)
+            ) {
+                ballSpeedX = -ballSpeedX;
+                hitCount++;
+
+                // Increase difficulty every few hits
+                if (hitCount % difficultyIncreaseInterval === 0) {
+                    ballSpeedX *= 1.1; // Increase speed by 10%
+                    ballSpeedY *= 1.1; // Increase speed by 10%
+                }
+            }
+
+            // Ball out of bounds (left and right sides)
+            if (ball.x - ball.size <= 0 || ball.x + ball.size >= canvas.width) {
+                showGameOver();
+            }
+
+            // Move opponent paddle
+            if (ball.y < opponentPaddle.y + opponentPaddle.height / 2) {
+                opponentPaddle.y = Math.max(0, opponentPaddle.y - paddleSpeed * 0.7); // Adjust speed for opponent paddle
+            } else {
+                opponentPaddle.y = Math.min(canvas.height - paddleHeight, opponentPaddle.y + paddleSpeed * 0.7); // Adjust speed for opponent paddle
+            }
+        }
+
+        function showGameOver() {
+            isGameOver = true;
+            document.getElementById('gameOverOverlay').style.display = 'flex';
+        }
+
+        function gameLoop() {
+            if (isGameOver) return;
+
+            draw();
+            update();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
 
         // Handle window resizing
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-      
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            playerPaddle.y = canvas.height / 2 - paddleHeight / 2;
+            opponentPaddle.y = canvas.height / 2 - paddleHeight / 2;
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+        });
+    </script>
+</body>
+</html>
