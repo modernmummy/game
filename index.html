@@ -3,116 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hardest Game</title>
+    <title>Endless Gauntlet</title>
     <style>
-        body { margin: 0; }
-        canvas { display: block; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #scoreboard {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: 24px;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="scoreboard">
+            <p id="score">Score: 0</p>
+        </div>
+    </div>
+    <div id="game-over">
+        <p id="final-score">Final Score: 0</p>
+        <button onclick="restartGame()">Restart</button>
+    </div>
     <script>
-        // Game variables
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const WIDTH = 800;
-        const HEIGHT = 600;
-        const DOT_SIZE = 20;
-        const OBSTACLE_SIZE = 30;
-        const OBSTACLE_SPEED = 3;
-        let dotX = WIDTH / 2;
-        let dotY = HEIGHT / 2;
-        let obstacles = [];
-        let score = 0;
-        let gameOver = false;
+        // game.js
 
-        canvas.width = WIDTH;
-        canvas.height = HEIGHT;
-        document.body.appendChild(canvas);
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const scoreElement = document.getElementById('score');
+            const gameOverElement = document.getElementById('game-over');
+            const finalScoreElement = document.getElementById('final-score');
 
-        // Event listeners for controls
-        document.addEventListener('keydown', (event) => {
-            if (event.code === 'ArrowUp') dotY -= 10;
-            if (event.code === 'ArrowDown') dotY += 10;
-            if (event.code === 'ArrowLeft') dotX -= 10;
-            if (event.code === 'ArrowRight') dotX += 10;
+            let score = 0;
+            let gameInterval;
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            function startGame() {
+                resizeCanvas();
+                score = 0;
+                scoreElement.textContent = `Score: ${score}`;
+                gameOverElement.style.display = 'none';
+
+                gameInterval = setInterval(updateGame, 1000 / 60); // 60 FPS
+            }
+
+            function updateGame() {
+                // Game logic and rendering will go here
+                // For demonstration, increment the score
+                score++;
+                scoreElement.textContent = `Score: ${score}`;
+            }
+
+            function endGame() {
+                clearInterval(gameInterval);
+                finalScoreElement.textContent = `Final Score: ${score}`;
+                gameOverElement.style.display = 'block';
+            }
+
+            function restartGame() {
+                startGame();
+            }
+
+            // Resize the canvas on window resize
+            window.addEventListener('resize', resizeCanvas);
+
+            // Start the game when the document is ready
+            startGame();
         });
-
-        // Function to generate obstacles
-        function generateObstacle() {
-            const x = Math.random() * (WIDTH - OBSTACLE_SIZE);
-            obstacles.push({ x, y: -OBSTACLE_SIZE });
-        }
-
-        // Function to update game state
-        function update() {
-            if (gameOver) return;
-
-            // Move obstacles
-            obstacles.forEach(obstacle => {
-                obstacle.y += OBSTACLE_SPEED;
-            });
-
-            // Remove off-screen obstacles
-            obstacles = obstacles.filter(obstacle => obstacle.y < HEIGHT);
-
-            // Check collision
-            obstacles.forEach(obstacle => {
-                if (
-                    dotX < obstacle.x + OBSTACLE_SIZE &&
-                    dotX + DOT_SIZE > obstacle.x &&
-                    dotY < obstacle.y + OBSTACLE_SIZE &&
-                    dotY + DOT_SIZE > obstacle.y
-                ) {
-                    gameOver = true;
-                }
-            });
-
-            // Increase score
-            score++;
-            if (score % 100 === 0) {
-                generateObstacle();
-            }
-        }
-
-        // Function to draw everything
-        function draw() {
-            ctx.clearRect(0, 0, WIDTH, HEIGHT);
-
-            // Draw dot
-            ctx.fillStyle = 'blue';
-            ctx.fillRect(dotX, dotY, DOT_SIZE, DOT_SIZE);
-
-            // Draw obstacles
-            ctx.fillStyle = 'red';
-            obstacles.forEach(obstacle => {
-                ctx.fillRect(obstacle.x, obstacle.y, OBSTACLE_SIZE, OBSTACLE_SIZE);
-            });
-
-            // Draw score
-            ctx.fillStyle = 'black';
-            ctx.font = '24px Arial';
-            ctx.fillText('Score: ' + score, 10, 30);
-
-            // Draw game over message
-            if (gameOver) {
-                ctx.fillStyle = 'black';
-                ctx.font = '48px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Game Over', WIDTH / 2, HEIGHT / 2);
-            }
-        }
-
-        // Main game loop
-        function gameLoop() {
-            if (gameOver) return;
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Start the game
-        generateObstacle(); // Initial obstacle
-        gameLoop();
     </script>
 </body>
 </html>
