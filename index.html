@@ -7,9 +7,34 @@
     <style>
         body { margin: 0; }
         canvas { display: block; }
+        #gameOverOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #gameOverOverlay button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
+    <div id="gameOverOverlay">
+        <div>
+            <h1>Game Over</h1>
+            <button onclick="restartGame()">Restart</button>
+        </div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // Basic setup
@@ -27,17 +52,17 @@
         scene.add(roof);
 
         // Create city background
-        const cityTexture = new THREE.TextureLoader().load('https://upload.wikimedia.org/wikipedia/commons/3/3c/Manhattan_Skyline_2012.jpg', () => {
-            const cityMaterial = new THREE.MeshBasicMaterial({ map: cityTexture, side: THREE.BackSide });
-            const cityGeometry = new THREE.BoxGeometry(1000, 1000, 1);
-            const city = new THREE.Mesh(cityGeometry, cityMaterial);
-            city.position.z = -500;
-            scene.add(city);
-        });
+        const cityTexture = new THREE.TextureLoader().load('https://upload.wikimedia.org/wikipedia/commons/3/3c/Manhattan_Skyline_2012.jpg');
+        const cityMaterial = new THREE.MeshBasicMaterial({ map: cityTexture, side: THREE.BackSide });
+        const cityGeometry = new THREE.BoxGeometry(1000, 1000, 1);
+        const city = new THREE.Mesh(cityGeometry, cityMaterial);
+        city.position.z = -500;
+        scene.add(city);
 
         // Create player (shooter)
+        // This object represents the player's position but won't be visible
         const playerGeometry = new THREE.BoxGeometry(1, 1.5, 1);
-        const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+        const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, visible: false }); // Invisible player
         const player = new THREE.Mesh(playerGeometry, playerMaterial);
         player.position.set(0, 1.5, 0);
         scene.add(player);
@@ -80,18 +105,18 @@
                 const direction = camera.position.clone().sub(enemy.position).normalize();
                 enemy.position.add(direction.multiplyScalar(0.05));
                 if (enemy.position.distanceTo(camera.position) < 1) {
-                    alert('Game Over!');
-                    document.location.reload();
+                    showGameOver();
                 }
             });
         }
 
         function handleKeyboard(event) {
+            const moveSpeed = 0.5;
             switch (event.code) {
-                case 'KeyW': camera.position.z -= 0.5; break;
-                case 'KeyS': camera.position.z += 0.5; break;
-                case 'KeyA': camera.position.x -= 0.5; break;
-                case 'KeyD': camera.position.x += 0.5; break;
+                case 'KeyW': camera.position.z -= moveSpeed; break;
+                case 'KeyS': camera.position.z += moveSpeed; break;
+                case 'KeyA': camera.position.x -= moveSpeed; break;
+                case 'KeyD': camera.position.x += moveSpeed; break;
             }
         }
 
@@ -99,13 +124,26 @@
             const sensitivity = 0.002;
             const angleX = (event.movementX / window.innerWidth) * 2 * Math.PI * sensitivity;
             const angleY = (event.movementY / window.innerHeight) * 2 * Math.PI * sensitivity;
+
+            // Update camera rotation
             camera.rotation.y -= angleX;
             camera.rotation.x -= angleY;
+            camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x)); // Limit vertical rotation
         }
 
         function shoot() {
-            const direction = new THREE.Vector3().subVectors(camera.getWorldDirection(new THREE.Vector3()), camera.position).normalize();
+            const direction = new THREE.Vector3();
+            camera.getWorldDirection(direction);
             createProjectile(camera.position.clone().add(direction), direction);
+        }
+
+        function showGameOver() {
+            document.getElementById('gameOverOverlay').style.display = 'flex';
+            cancelAnimationFrame(animationId); // Stop the animation loop
+        }
+
+        function restartGame() {
+            location.reload(); // Reload the page to restart the game
         }
 
         // Setup initial enemies
@@ -116,8 +154,10 @@
         document.addEventListener('click', shoot);
 
         let gameTime = 0;
+        let animationId;
+
         function animate() {
-            requestAnimationFrame(animate);
+            animationId = requestAnimationFrame(animate);
 
             // Increase difficulty over time
             gameTime += 0.01;
@@ -131,7 +171,7 @@
             updateEnemies();
             updateProjectiles();
 
-            // Camera follows player
+            // Update camera position based on player
             camera.position.set(player.position.x, player.position.y + 1.5, player.position.z + 5);
             camera.lookAt(player.position);
 
