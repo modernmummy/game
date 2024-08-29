@@ -80,6 +80,7 @@
         }
 
         function shootBullet() {
+            // Set up raycaster
             raycaster.updateMatrixWorld(); // Update the raycaster matrix
             raycaster.ray.origin.copy(camera.position);
             raycaster.ray.direction.copy(camera.getWorldDirection(new THREE.Vector3()));
@@ -142,9 +143,3 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
-
-        // Initialize game
-        init();
-    </script>
-</body>
-</html>
