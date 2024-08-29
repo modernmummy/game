@@ -12,13 +12,14 @@
 <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        let scene, camera, renderer, player, controls;
+        let scene, camera, renderer, player;
         let bullets = [];
         let enemies = [];
         let keys = {};
         const BULLET_SPEED = 10;
         const PLAYER_SPEED = 5;
         const ENEMY_SPEED = 2;
+        const ENEMY_DAMAGE_RADIUS = 0.5; // Radius for collision detection
 
         // Initialize the scene
         function init() {
@@ -77,6 +78,21 @@
             scene.add(bullet);
         }
 
+        function detectCollisions() {
+            bullets.forEach((bullet, bulletIndex) => {
+                enemies.forEach((enemy, enemyIndex) => {
+                    const distance = bullet.position.distanceTo(enemy.position);
+                    if (distance < ENEMY_DAMAGE_RADIUS) {
+                        // Handle collision
+                        scene.remove(enemy);
+                        enemies.splice(enemyIndex, 1);
+                        scene.remove(bullet);
+                        bullets.splice(bulletIndex, 1);
+                    }
+                });
+            });
+        }
+
         function animate() {
             requestAnimationFrame(animate);
 
@@ -100,6 +116,9 @@
                 let direction = player.position.clone().sub(enemy.position).normalize();
                 enemy.position.add(direction.multiplyScalar(ENEMY_SPEED * 0.1));
             });
+
+            // Detect collisions between bullets and enemies
+            detectCollisions();
 
             // Render scene
             renderer.render(scene, camera);
