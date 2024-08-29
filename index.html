@@ -54,19 +54,16 @@
         directionalLight.position.set(5, 10, 5).normalize();
         scene.add(directionalLight);
 
-        // Create rooftop with realistic texture
-        const textureLoader = new THREE.TextureLoader();
-        const roofTexture = textureLoader.load('https://www.example.com/roof-texture.jpg');
-        const roofMaterial = new THREE.MeshStandardMaterial({ map: roofTexture });
+        // Create a simple visible rooftop for debugging
         const roofGeometry = new THREE.BoxGeometry(30, 1, 30);
+        const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
         const roof = new THREE.Mesh(roofGeometry, roofMaterial);
         roof.position.y = 1;
         scene.add(roof);
 
-        // Create city background with realistic texture
-        const cityTexture = textureLoader.load('https://www.example.com/city-texture.jpg');
-        const cityMaterial = new THREE.MeshBasicMaterial({ map: cityTexture, side: THREE.BackSide });
+        // Create a simple city background for debugging
         const cityGeometry = new THREE.BoxGeometry(1000, 1000, 1);
+        const cityMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.BackSide });
         const city = new THREE.Mesh(cityGeometry, cityMaterial);
         city.position.z = -500;
         scene.add(city);
@@ -176,7 +173,7 @@
 
         // Start the animation loop
         animate();
-        
+
         // Enable PointerLockControls
         document.addEventListener('click', () => {
             controls.lock();
