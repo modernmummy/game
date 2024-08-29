@@ -29,19 +29,24 @@
             const ctx = canvas.getContext('2d');
 
             // Game constants
-            const GRAVITY = .4;
+            const GRAVITY = 0.4;
             const JUMP_STRENGTH = 5;
             const PIPE_WIDTH = 50;
             const PIPE_SPACING = 200;
             const BIRD_RADIUS = 12;
             const GAP_HEIGHT = 150; // Gap height between pipes
+            const FIREBALL_RADIUS = 10;
+            const FIREBALL_INTERVAL = 100; // Frames between new fireballs
+            const FIREBALL_SPEED = 4;
 
             // Game variables
             let birdY = canvas.height / 2;
             let birdVelocity = 0;
             let pipes = [];
+            let fireballs = [];
             let score = 0;
             let gameOver = false;
+            let fireballTimer = 0;
 
             function createPipe() {
                 const maxTopHeight = canvas.height - GAP_HEIGHT - 50; // Prevents top pipe from being too small
@@ -52,6 +57,13 @@
                     x: canvas.width,
                     topHeight: topHeight,
                     bottomHeight: bottomHeight
+                });
+            }
+
+            function createFireball() {
+                fireballs.push({
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height - FIREBALL_RADIUS * 2) + FIREBALL_RADIUS
                 });
             }
 
@@ -71,6 +83,16 @@
                 });
             }
 
+            function drawFireballs() {
+                ctx.fillStyle = 'red';
+                fireballs.forEach(fireball => {
+                    ctx.beginPath();
+                    ctx.arc(fireball.x, fireball.y, FIREBALL_RADIUS, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.closePath();
+                });
+            }
+
             function updatePipes() {
                 pipes.forEach(pipe => {
                     pipe.x -= 2;
@@ -86,6 +108,23 @@
                 }
             }
 
+            function updateFireballs() {
+                fireballs.forEach(fireball => {
+                    fireball.x -= FIREBALL_SPEED;
+                });
+
+                if (fireballs.length && fireballs[0].x < -FIREBALL_RADIUS) {
+                    fireballs.shift();
+                }
+
+                if (fireballTimer <= 0 && !gameOver) {
+                    createFireball();
+                    fireballTimer = FIREBALL_INTERVAL;
+                }
+
+                fireballTimer--;
+            }
+
             function detectCollisions() {
                 pipes.forEach(pipe => {
                     if (50 + BIRD_RADIUS > pipe.x && 50 - BIRD_RADIUS < pipe.x + PIPE_WIDTH) {
@@ -98,6 +137,14 @@
                 if (birdY + BIRD_RADIUS > canvas.height || birdY - BIRD_RADIUS < 0) {
                     gameOver = true;
                 }
+
+                fireballs.forEach(fireball => {
+                    const dx = fireball.x - 50;
+                    const dy = fireball.y - birdY;
+                    if (Math.sqrt(dx * dx + dy * dy) < BIRD_RADIUS + FIREBALL_RADIUS) {
+                        gameOver = true;
+                    }
+                });
             }
 
             function drawScore() {
@@ -113,12 +160,14 @@
                 birdY += birdVelocity;
 
                 updatePipes();
+                updateFireballs();
                 detectCollisions();
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 drawBird();
                 drawPipes();
+                drawFireballs();
                 drawScore();
 
                 requestAnimationFrame(update);
@@ -130,10 +179,12 @@
                 } else {
                     // Restart game if clicked after game over
                     pipes = [];
+                    fireballs = [];
                     birdY = canvas.height / 2;
                     birdVelocity = 0;
                     score = 0;
                     gameOver = false;
+                    fireballTimer = 0;
                     createPipe();
                 }
             });
