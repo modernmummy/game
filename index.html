@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Bird Game</title>
+    <title>Fighter Jet Game</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background: #87CEEB; /* Sky blue */
+            background: #000; /* Black background for space */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -16,181 +16,166 @@
         }
 
         canvas {
-            background: #87CEEB; /* Sky blue */
-            border: 2px solid #000;
+            background: #000; /* Black background for space */
+            border: 2px solid #fff;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="320" height="480"></canvas>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
 
             // Game constants
-            const GRAVITY = 0.4;
-            const JUMP_STRENGTH = 5;
-            const PIPE_WIDTH = 50;
-            const PIPE_SPACING = 200;
-            const BIRD_RADIUS = 12;
-            const GAP_HEIGHT = 150; // Gap height between pipes
-            const FIREBALL_RADIUS = 10;
-            const FIREBALL_INTERVAL = 100; // Frames between new fireballs
-            const FIREBALL_SPEED = 4;
+            const JET_WIDTH = 50;
+            const JET_HEIGHT = 30;
+            const MISSILE_WIDTH = 5;
+            const MISSILE_HEIGHT = 20;
+            const MISSILE_SPEED = 6;
+            const ENEMY_WIDTH = 50;
+            const ENEMY_HEIGHT = 30;
+            const ENEMY_SPEED = 2;
+            const INITIAL_ENEMY_COUNT = 3;
+            const SCORE_INCREMENT = 10;
+            const ENEMY_INTERVAL = 150; // Frames between new enemies
 
             // Game variables
-            let birdY = canvas.height / 2;
-            let birdVelocity = 0;
-            let pipes = [];
-            let fireballs = [];
+            let jetX = canvas.width / 2 - JET_WIDTH / 2;
+            let jetY = canvas.height - JET_HEIGHT - 10;
+            let jetSpeed = 5;
+            let missiles = [];
+            let enemies = [];
             let score = 0;
             let gameOver = false;
-            let fireballTimer = 0;
+            let enemyTimer = 0;
 
-            function createPipe() {
-                const maxTopHeight = canvas.height - GAP_HEIGHT - 50; // Prevents top pipe from being too small
-                const topHeight = Math.random() * maxTopHeight;
-                const bottomHeight = canvas.height - topHeight - GAP_HEIGHT;
-
-                pipes.push({
-                    x: canvas.width,
-                    topHeight: topHeight,
-                    bottomHeight: bottomHeight
-                });
+            function drawJet() {
+                ctx.fillStyle = 'blue';
+                ctx.fillRect(jetX, jetY, JET_WIDTH, JET_HEIGHT);
             }
 
-            function createFireball() {
-                fireballs.push({
-                    x: canvas.width,
-                    y: Math.random() * (canvas.height - FIREBALL_RADIUS * 2) + FIREBALL_RADIUS
-                });
-            }
-
-            function drawBird() {
-                ctx.beginPath();
-                ctx.arc(50, birdY, BIRD_RADIUS, 0, Math.PI * 2);
-                ctx.fillStyle = 'yellow';
-                ctx.fill();
-                ctx.closePath();
-            }
-
-            function drawPipes() {
-                ctx.fillStyle = 'green';
-                pipes.forEach(pipe => {
-                    ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.topHeight);
-                    ctx.fillRect(pipe.x, canvas.height - pipe.bottomHeight, PIPE_WIDTH, pipe.bottomHeight);
-                });
-            }
-
-            function drawFireballs() {
+            function drawMissiles() {
                 ctx.fillStyle = 'red';
-                fireballs.forEach(fireball => {
-                    ctx.beginPath();
-                    ctx.arc(fireball.x, fireball.y, FIREBALL_RADIUS, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.closePath();
+                missiles.forEach(missile => {
+                    ctx.fillRect(missile.x, missile.y, MISSILE_WIDTH, MISSILE_HEIGHT);
                 });
             }
 
-            function updatePipes() {
-                pipes.forEach(pipe => {
-                    pipe.x -= 2;
-                });
-
-                if (pipes.length && pipes[0].x < -PIPE_WIDTH) {
-                    pipes.shift();
-                    score++;
-                }
-
-                if (Math.random() < 0.01 && !gameOver) {
-                    createPipe();
-                }
-            }
-
-            function updateFireballs() {
-                fireballs.forEach(fireball => {
-                    fireball.x -= FIREBALL_SPEED;
-                });
-
-                if (fireballs.length && fireballs[0].x < -FIREBALL_RADIUS) {
-                    fireballs.shift();
-                }
-
-                if (fireballTimer <= 0 && !gameOver) {
-                    createFireball();
-                    fireballTimer = FIREBALL_INTERVAL;
-                }
-
-                fireballTimer--;
-            }
-
-            function detectCollisions() {
-                pipes.forEach(pipe => {
-                    if (50 + BIRD_RADIUS > pipe.x && 50 - BIRD_RADIUS < pipe.x + PIPE_WIDTH) {
-                        if (birdY - BIRD_RADIUS < pipe.topHeight || birdY + BIRD_RADIUS > canvas.height - pipe.bottomHeight) {
-                            gameOver = true;
-                        }
-                    }
-                });
-
-                if (birdY + BIRD_RADIUS > canvas.height || birdY - BIRD_RADIUS < 0) {
-                    gameOver = true;
-                }
-
-                fireballs.forEach(fireball => {
-                    const dx = fireball.x - 50;
-                    const dy = fireball.y - birdY;
-                    if (Math.sqrt(dx * dx + dy * dy) < BIRD_RADIUS + FIREBALL_RADIUS) {
-                        gameOver = true;
-                    }
+            function drawEnemies() {
+                ctx.fillStyle = 'green';
+                enemies.forEach(enemy => {
+                    ctx.fillRect(enemy.x, enemy.y, ENEMY_WIDTH, ENEMY_HEIGHT);
                 });
             }
 
             function drawScore() {
                 ctx.font = '20px Arial';
-                ctx.fillStyle = 'black';
+                ctx.fillStyle = 'white';
                 ctx.fillText(`Score: ${score}`, 10, 20);
+            }
+
+            function createEnemy() {
+                enemies.push({
+                    x: Math.random() * (canvas.width - ENEMY_WIDTH),
+                    y: -ENEMY_HEIGHT
+                });
+            }
+
+            function updateMissiles() {
+                missiles.forEach(missile => {
+                    missile.y -= MISSILE_SPEED;
+                });
+
+                // Remove off-screen missiles
+                missiles = missiles.filter(missile => missile.y + MISSILE_HEIGHT > 0);
+            }
+
+            function updateEnemies() {
+                enemies.forEach(enemy => {
+                    enemy.y += ENEMY_SPEED + Math.floor(score / 100); // Increase speed as score increases
+                });
+
+                // Remove off-screen enemies
+                enemies = enemies.filter(enemy => enemy.y < canvas.height);
+
+                if (enemyTimer <= 0 && !gameOver) {
+                    createEnemy();
+                    enemyTimer = ENEMY_INTERVAL - Math.floor(score / 100); // Increase interval reduction as score increases
+                }
+
+                enemyTimer--;
+            }
+
+            function detectCollisions() {
+                missiles.forEach((missile, missileIndex) => {
+                    enemies.forEach((enemy, enemyIndex) => {
+                        if (missile.x < enemy.x + ENEMY_WIDTH &&
+                            missile.x + MISSILE_WIDTH > enemy.x &&
+                            missile.y < enemy.y + ENEMY_HEIGHT &&
+                            missile.y + MISSILE_HEIGHT > enemy.y) {
+                                // Remove missile and enemy on collision
+                                missiles.splice(missileIndex, 1);
+                                enemies.splice(enemyIndex, 1);
+                                score += SCORE_INCREMENT;
+                        }
+                    });
+                });
+
+                enemies.forEach(enemy => {
+                    if (jetX < enemy.x + ENEMY_WIDTH &&
+                        jetX + JET_WIDTH > enemy.x &&
+                        jetY < enemy.y + ENEMY_HEIGHT &&
+                        jetY + JET_HEIGHT > enemy.y) {
+                            gameOver = true;
+                    }
+                });
             }
 
             function update() {
                 if (gameOver) return;
 
-                birdVelocity += GRAVITY;
-                birdY += birdVelocity;
-
-                updatePipes();
-                updateFireballs();
+                updateMissiles();
+                updateEnemies();
                 detectCollisions();
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                drawBird();
-                drawPipes();
-                drawFireballs();
+                drawJet();
+                drawMissiles();
+                drawEnemies();
                 drawScore();
 
                 requestAnimationFrame(update);
             }
 
-            canvas.addEventListener('click', () => {
-                if (!gameOver) {
-                    birdVelocity = -JUMP_STRENGTH;
-                } else {
-                    // Restart game if clicked after game over
-                    pipes = [];
-                    fireballs = [];
-                    birdY = canvas.height / 2;
-                    birdVelocity = 0;
-                    score = 0;
-                    gameOver = false;
-                    fireballTimer = 0;
-                    createPipe();
+            // Handle user input
+            function handleKeyDown(e) {
+                if (e.key === 'ArrowLeft') {
+                    jetX = Math.max(0, jetX - jetSpeed);
+                } else if (e.key === 'ArrowRight') {
+                    jetX = Math.min(canvas.width - JET_WIDTH, jetX + jetSpeed);
+                } else if (e.key === ' ') {
+                    if (!gameOver) {
+                        missiles.push({ x: jetX + JET_WIDTH / 2 - MISSILE_WIDTH / 2, y: jetY });
+                    } else {
+                        // Restart game if space is pressed after game over
+                        enemies = [];
+                        missiles = [];
+                        jetX = canvas.width / 2 - JET_WIDTH / 2;
+                        jetY = canvas.height - JET_HEIGHT - 10;
+                        score = 0;
+                        gameOver = false;
+                        enemyTimer = 0;
+                        update();
+                    }
                 }
-            });
+            }
+
+            document.addEventListener('keydown', handleKeyDown);
 
             // Start the game
-            createPipe();
             update();
         });
     </script>
