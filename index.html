@@ -44,14 +44,9 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Add basic ambient light
-        const ambientLight = new THREE.AmbientLight(0x404040);
-        scene.add(ambientLight);
-
-        // Add basic directional light
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(0, 10, 10);
-        scene.add(directionalLight);
+        // Basic light
+        const light = new THREE.AmbientLight(0x404040); // Soft white light
+        scene.add(light);
 
         // Tunnel Geometry
         const tunnelGeometry = new THREE.CylinderGeometry(5, 5, 1000, 32, 1, true);
@@ -129,6 +124,29 @@
                 if (obstacle.position.z > player.position.z + 50) {
                     obstacle.position.z = player.position.z - 1000;
                     obstacle.position.x = Math.random() * 10 - 5;
-                    obstacle.positi
+                    obstacle.position.y = Math.random() * 10 - 5;
+                }
+            });
 
-            
+            // Check for collisions
+            checkCollision();
+
+            renderer.render(scene, camera);
+        }
+
+        // Set camera position
+        camera.position.z = 10;
+        camera.position.y = 0;
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start the animation loop
+        animate();
+    </script>
+</body>
+</html>
