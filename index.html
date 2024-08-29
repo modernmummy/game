@@ -29,11 +29,12 @@
             const ctx = canvas.getContext('2d');
 
             // Game constants
-            const GRAVITY = .4;
+            const GRAVITY = .1;
             const JUMP_STRENGTH = 5;
             const PIPE_WIDTH = 50;
             const PIPE_SPACING = 200;
             const BIRD_RADIUS = 12;
+            const GAP_HEIGHT = 150; // Gap height between pipes
 
             // Game variables
             let birdY = canvas.height / 2;
@@ -43,12 +44,14 @@
             let gameOver = false;
 
             function createPipe() {
-                const gap = 150;
-                const topHeight = Math.random() * (canvas.height - gap);
+                const maxTopHeight = canvas.height - GAP_HEIGHT - 50; // Prevents top pipe from being too small
+                const topHeight = Math.random() * maxTopHeight;
+                const bottomHeight = canvas.height - topHeight - GAP_HEIGHT;
+
                 pipes.push({
                     x: canvas.width,
                     topHeight: topHeight,
-                    bottomHeight: canvas.height - topHeight - gap
+                    bottomHeight: bottomHeight
                 });
             }
 
