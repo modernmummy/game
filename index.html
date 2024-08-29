@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Camera Movement</title>
+    <title>3D Shooter Game</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
@@ -12,69 +12,114 @@
 <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Setup basic scene, camera, and renderer
+        // Basic setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Create a sphere to represent the central point
+        const player = {
+            position: new THREE.Vector3(0, 1, 10),
+            radius: 10,
+            angle: 0,
+            speed: 0.1,
+            moveForward: false,
+            moveBackward: false,
+            mouseSensitivity: 0.002,
+            forwardBackward: 0
+        };
+
+        // Add a sphere as the central point
         const geometry = new THREE.SphereGeometry(1, 32, 32);
         const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const sphere = new THREE.Mesh(geometry, material);
-        scene.add(sphere);
+        const centralPoint = new THREE.Mesh(geometry, material);
+        scene.add(centralPoint);
 
-        // Initial camera settings
-        let radius = 10;
-        let angle = 0;
-        const speed = 0.1;
-        const sensitivity = 0.002; // Mouse sensitivity
-        let forwardBackward = 0; // To store movement direction
+        // Enemies and projectiles
+        const enemies = [];
+        const projectiles = [];
 
-        // Mouse control variables
-        let mouseX = 0;
-        let mouseY = 0;
+        function createEnemy() {
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const enemy = new THREE.Mesh(geometry, material);
+            enemy.position.set(Math.random() * 20 - 10, 1, Math.random() * 20 - 10);
+            scene.add(enemy);
+            enemies.push(enemy);
+        }
 
-        // Event listeners for keyboard and mouse
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'ArrowUp') forwardBackward = 1;
-            if (e.code === 'ArrowDown') forwardBackward = -1;
-        });
-        document.addEventListener('keyup', (e) => {
-            if (e.code === 'ArrowUp' || e.code === 'ArrowDown') forwardBackward = 0;
-        });
+        function createProjectile(position, direction) {
+            const geometry = new THREE.SphereGeometry(0.2, 8, 8);
+            const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            const projectile = new THREE.Mesh(geometry, material);
+            projectile.position.copy(position);
+            projectile.userData = { direction: direction.clone() };
+            scene.add(projectile);
+            projectiles.push(projectile);
+        }
 
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = - (e.clientY / window.innerHeight) * 2 + 1;
-        });
+        function updateProjectiles() {
+            projectiles.forEach(projectile => {
+                projectile.position.add(projectile.userData.direction.clone().multiplyScalar(0.5));
+                if (projectile.position.length() > 100) {
+                    scene.remove(projectile);
+                    projectiles.splice(projectiles.indexOf(projectile), 1);
+                }
+            });
+        }
+
+        function updateEnemies() {
+            enemies.forEach(enemy => {
+                // Simple enemy movement
+                const direction = camera.position.clone().sub(enemy.position).normalize();
+                enemy.position.add(direction.multiplyScalar(0.05));
+                if (enemy.position.distanceTo(camera.position) < 1) {
+                    alert('Game Over!');
+                    document.location.reload();
+                }
+            });
+        }
+
+        function handleKeyboard(event) {
+            switch(event.code) {
+                case 'ArrowUp': player.moveForward = event.type === 'keydown'; break;
+                case 'ArrowDown': player.moveBackward = event.type === 'keydown'; break;
+            }
+        }
+
+        function handleMouseMove(event) {
+            player.angle += (event.movementX / window.innerWidth) * 2 * Math.PI * player.mouseSensitivity;
+            player.radius = Math.max(5, Math.min(player.radius - (event.movementY * player.mouseSensitivity), 50));
+        }
+
+        function shoot() {
+            const direction = new THREE.Vector3().subVectors(camera.position, centralPoint.position).normalize();
+            createProjectile(camera.position, direction);
+        }
+
+        // Setup initial enemies
+        for (let i = 0; i < 5; i++) createEnemy();
+
+        document.addEventListener('keydown', handleKeyboard);
+        document.addEventListener('keyup', handleKeyboard);
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('click', shoot);
 
         function animate() {
             requestAnimationFrame(animate);
 
-            // Update camera position based on mouse movement
-            angle += mouseX * sensitivity;
-            radius += mouseY * sensitivity;
-
-            // Limit radius to prevent camera from getting too close or too far
-            radius = Math.max(5, Math.min(radius, 50));
-
             // Update camera position
-            camera.position.x = radius * Math.cos(angle);
-            camera.position.z = radius * Math.sin(angle);
-            camera.position.y = Math.max(2, Math.min(10, camera.position.y)); // Keep camera above ground
+            player.angle += (player.moveForward - player.moveBackward) * 0.05;
+            player.radius += (player.moveForward - player.moveBackward) * 0.05;
+            camera.position.x = player.radius * Math.cos(player.angle);
+            camera.position.z = player.radius * Math.sin(player.angle);
+            camera.position.y = Math.max(2, Math.min(camera.position.y, 10));
+            camera.lookAt(centralPoint.position);
 
-            // Move forward or backward
-            const forwardVector = new THREE.Vector3(
-                Math.sin(angle) * forwardBackward * speed,
-                0,
-                Math.cos(angle) * forwardBackward * speed
-            );
-            camera.position.add(forwardVector);
-
-            // Look at the center point (sphere)
-            camera.lookAt(sphere.position);
+            // Update enemies and projectiles
+            updateEnemies();
+            updateProjectiles();
 
             renderer.render(scene, camera);
         }
@@ -86,7 +131,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Start the animation loop
         animate();
     </script>
 </body>
