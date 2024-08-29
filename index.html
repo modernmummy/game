@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Realistic Rooftop Shooter</title>
+    <title>Fighter Jet Game</title>
     <style>
-        body { margin: 0; }
+        body { margin: 0; overflow: hidden; }
         canvas { display: block; }
         #gameOverOverlay {
             position: absolute;
@@ -45,47 +45,40 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Add ambient light
-        const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
+        // Add basic ambient light
+        const ambientLight = new THREE.AmbientLight(0x404040);
         scene.add(ambientLight);
 
-        // Add directional light
+        // Add basic directional light
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
         directionalLight.position.set(5, 10, 5).normalize();
         scene.add(directionalLight);
 
-        // Create a simple visible rooftop for debugging
-        const roofGeometry = new THREE.BoxGeometry(30, 1, 30);
-        const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
-        const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-        roof.position.y = 1;
-        scene.add(roof);
+        // Create a simple city with buildings
+        const buildingGeometry = new THREE.BoxGeometry(2, 10, 2);
+        const buildingMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
 
-        // Create a simple city background for debugging
-        const cityGeometry = new THREE.BoxGeometry(1000, 1000, 1);
-        const cityMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.BackSide });
-        const city = new THREE.Mesh(cityGeometry, cityMaterial);
-        city.position.z = -500;
-        scene.add(city);
+        for (let i = 0; i < 100; i++) {
+            const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+            building.position.set(Math.random() * 100 - 50, 5, Math.random() * 100 - 50);
+            scene.add(building);
+        }
 
-        // Player setup with PointerLockControls
-        const controls = new THREE.PointerLockControls(camera, renderer.domElement);
-        scene.add(controls.getObject());
-
-        // Create player (shooter)
-        const playerGeometry = new THREE.BoxGeometry(1, 1.5, 1);
-        const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-        const player = new THREE.Mesh(playerGeometry, playerMaterial);
-        player.position.set(0, 1.5, 0);
-        scene.add(player);
+        // Create a simple fighter jet
+        const jetGeometry = new THREE.ConeGeometry(1, 3, 4);
+        const jetMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+        const jet = new THREE.Mesh(jetGeometry, jetMaterial);
+        jet.rotation.x = Math.PI / 2;
+        jet.position.y = 1;
+        scene.add(jet);
 
         // Create enemies
         const enemies = [];
         function createEnemy() {
-            const enemyGeometry = new THREE.BoxGeometry(1, 1, 1);
-            const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+            const enemyGeometry = new THREE.SphereGeometry(1, 8, 8);
+            const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
             const enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
-            enemy.position.set(Math.random() * 20 - 10, 1, Math.random() * 20 - 10);
+            enemy.position.set(Math.random() * 100 - 50, 5, Math.random() * 100 - 50);
             scene.add(enemy);
             enemies.push(enemy);
         }
@@ -104,8 +97,8 @@
 
         function updateProjectiles() {
             projectiles.forEach(projectile => {
-                projectile.position.add(projectile.userData.direction.clone().multiplyScalar(0.5));
-                if (projectile.position.distanceTo(camera.position) > 100) {
+                projectile.position.add(projectile.userData.direction.clone().multiplyScalar(1));
+                if (projectile.position.distanceTo(camera.position) > 200) {
                     scene.remove(projectile);
                     projectiles.splice(projectiles.indexOf(projectile), 1);
                 }
@@ -114,9 +107,10 @@
 
         function updateEnemies() {
             enemies.forEach(enemy => {
+                // Simple AI: move towards the jet
                 const direction = camera.position.clone().sub(enemy.position).normalize();
-                enemy.position.add(direction.multiplyScalar(0.05));
-                if (enemy.position.distanceTo(camera.position) < 1) {
+                enemy.position.add(direction.multiplyScalar(0.1));
+                if (enemy.position.distanceTo(camera.position) < 3) {
                     showGameOver();
                 }
             });
@@ -125,7 +119,7 @@
         function shoot() {
             const direction = new THREE.Vector3();
             camera.getWorldDirection(direction);
-            createProjectile(camera.position.clone().add(direction), direction);
+            createProjectile(camera.position.clone().add(direction.multiplyScalar(2)), direction);
         }
 
         function showGameOver() {
@@ -139,9 +133,20 @@
         }
 
         // Setup initial enemies
-        for (let i = 0; i < 5; i++) createEnemy();
+        for (let i = 0; i < 10; i++) createEnemy();
 
         document.addEventListener('click', shoot);
+
+        const controls = new THREE.PointerLockControls(camera, renderer.domElement);
+        scene.add(controls.getObject());
+
+        // Jet controls
+        let speed = 0.1;
+        function updateJet() {
+            const forward = new THREE.Vector3();
+            controls.getObject().getWorldDirection(forward);
+            jet.position.add(forward.multiplyScalar(speed));
+        }
 
         let gameTime = 0;
         let animationId;
@@ -149,15 +154,7 @@
         function animate() {
             animationId = requestAnimationFrame(animate);
 
-            // Increase difficulty over time
-            gameTime += 0.01;
-            if (gameTime > 1 && enemies.length < 20) {
-                for (let i = 0; i < Math.floor(gameTime); i++) {
-                    createEnemy();
-                }
-                gameTime = 0;
-            }
-
+            updateJet();
             updateEnemies();
             updateProjectiles();
 
