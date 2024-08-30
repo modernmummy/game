@@ -49,6 +49,9 @@
         let paddleSpeed = 10;
         const paddleSpeedIncreaseInterval = 5; // Increase paddle speed every 5 hits
 
+        // AI Paddle settings
+        const aiPaddleSpeedMultiplier = 1.5; // AI paddle is 1.5x faster than player paddle
+
         // Ball settings
         const ballSize = 10;
         let ballSpeedX = 5;
@@ -77,6 +80,10 @@
             size: ballSize
         };
 
+        // Net settings
+        const netWidth = 10;
+        const netHeight = canvas.height;
+
         // Game state
         let isGameOver = false;
 
@@ -89,19 +96,16 @@
             }
         });
 
-        document.addEventListener('keyup', (event) => {
-            // Stop vertical movement when key is released
-            if (event.code === 'ArrowUp' || event.code === 'KeyW' || event.code === 'ArrowDown' || event.code === 'KeyS') {
-                // Reset the paddle's y position to stop movement if needed
-            }
-        });
-
         function restartGame() {
             location.reload(); // Reload the page to restart the game
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw net
+            ctx.fillStyle = 'white'; // Net color
+            ctx.fillRect(canvas.width / 2 - netWidth / 2, 0, netWidth, netHeight);
 
             // Draw paddles
             ctx.fillStyle = 'red'; // Player paddle color
@@ -169,11 +173,14 @@
         }
 
         function updateOpponentPaddle() {
+            // AI paddle speed adjustment
+            const aiPaddleSpeed = paddleSpeed * aiPaddleSpeedMultiplier;
+
             // Simple AI for opponent paddle
             if (ball.y < opponentPaddle.y) {
-                opponentPaddle.y -= paddleSpeed / 2;
+                opponentPaddle.y -= aiPaddleSpeed;
             } else if (ball.y > opponentPaddle.y + paddleHeight) {
-                opponentPaddle.y += paddleSpeed / 2;
+                opponentPaddle.y += aiPaddleSpeed;
             }
             // Keep opponent paddle within canvas bounds
             opponentPaddle.y = Math.max(0, Math.min(canvas.height - paddleHeight, opponentPaddle.y));
