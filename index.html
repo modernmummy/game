@@ -44,15 +44,16 @@
         canvas.height = window.innerHeight;
 
         // Paddle settings
-        const paddleWidth = 10;
-        const paddleHeight = 100;
-        const paddleSpeed = 10;
+        let paddleWidth = 10;
+        let paddleHeight = 100;
+        let paddleSpeed = 10;
+        const paddleSpeedIncreaseInterval = 5; // Increase paddle speed every 5 hits
 
         // Ball settings
         const ballSize = 10;
         let ballSpeedX = 5;
         let ballSpeedY = 3;
-        let difficultyIncreaseInterval = 5; // Increase difficulty every 5 hits
+        const difficultyIncreaseInterval = 5; // Increase difficulty every 5 hits
         let hitCount = 0;
 
         // Paddle and Ball positions
@@ -129,8 +130,11 @@
                 ballSpeedX = -ballSpeedX;
                 hitCount++;
                 if (hitCount % difficultyIncreaseInterval === 0) {
-                    ballSpeedX *= 1.1; // Increase speed
-                    ballSpeedY *= 1.1; // Increase speed
+                    ballSpeedX *= 1.1; // Increase ball speed
+                    ballSpeedY *= 1.1; // Increase ball speed
+                }
+                if (hitCount % paddleSpeedIncreaseInterval === 0) {
+                    paddleSpeed *= 1.1; // Increase paddle speed
                 }
             }
 
@@ -138,6 +142,14 @@
                 ball.y > opponentPaddle.y &&
                 ball.y < opponentPaddle.y + opponentPaddle.height) {
                 ballSpeedX = -ballSpeedX;
+                hitCount++;
+                if (hitCount % difficultyIncreaseInterval === 0) {
+                    ballSpeedX *= 1.1; // Increase ball speed
+                    ballSpeedY *= 1.1; // Increase ball speed
+                }
+                if (hitCount % paddleSpeedIncreaseInterval === 0) {
+                    paddleSpeed *= 1.1; // Increase paddle speed
+                }
             }
 
             // Ball out of bounds
