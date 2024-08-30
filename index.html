@@ -102,14 +102,33 @@
         const blockWidth = 50;
         const blockHeight = 10;
         const blockSpeed = 2;
-        let blocks = [
-            // Top blocks
-            { x: canvas.width / 2 - blockWidth / 2, y: 50, width: blockWidth, height: blockHeight, dx: blockSpeed, dy: 0 },
-            { x: canvas.width / 2 - blockWidth / 2, y: 60 + blockHeight, width: blockWidth, height: blockHeight, dx: blockSpeed, dy: 0 },
-            // Bottom blocks
-            { x: canvas.width / 2 - blockWidth / 2, y: canvas.height - 50 - blockHeight, width: blockWidth, height: blockHeight, dx: blockSpeed, dy: 0 },
-            { x: canvas.width / 2 - blockWidth / 2, y: canvas.height - 60 - 2 * blockHeight, width: blockWidth, height: blockHeight, dx: blockSpeed, dy: 0 }
-        ];
+
+        function getRandomPosition() {
+            return {
+                x: Math.random() * (canvas.width - blockWidth),
+                y: Math.random() * (canvas.height - blockHeight)
+            };
+        }
+
+        function getRandomDirection() {
+            return Math.random() < 0.5 ? blockSpeed : -blockSpeed;
+        }
+
+        // Initialize moving blocks
+        let blocks = [];
+        for (let i = 0; i < 4; i++) {
+            let position = getRandomPosition();
+            let directionX = getRandomDirection();
+            let directionY = getRandomDirection();
+            blocks.push({ 
+                x: position.x, 
+                y: position.y, 
+                width: blockWidth, 
+                height: blockHeight, 
+                dx: directionX, 
+                dy: directionY 
+            });
+        }
 
         // Game state
         let isGameOver = false;
@@ -238,10 +257,14 @@
         function updateBlocks() {
             blocks.forEach(block => {
                 block.x += block.dx;
+                block.y += block.dy;
 
                 // Reverse direction if block hits the edge
                 if (block.x <= 0 || block.x + block.width >= canvas.width) {
                     block.dx = -block.dx;
+                }
+                if (block.y <= 0 || block.y + block.height >= canvas.height) {
+                    block.dy = -block.dy;
                 }
             });
         }
