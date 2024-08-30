@@ -26,9 +26,23 @@
             font-size: 16px;
             cursor: pointer;
         }
+        #scoreboard {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
+    <div id="scoreboard">
+        <h2>Top Scores</h2>
+        <ol id="topScores"></ol>
+    </div>
     <div id="gameOverOverlay">
         <div>
             <h1>Game Over</h1>
@@ -84,8 +98,36 @@
         const netWidth = 10;
         const netHeight = canvas.height;
 
+        // Moving blocks settings
+        const blockWidth = 50;
+        const blockHeight = 10;
+        const blockSpeed = 2;
+        let blocks = [
+            { x: canvas.width / 2 - blockWidth / 2, y: 50, width: blockWidth, height: blockHeight, dx: blockSpeed }
+        ];
+
         // Game state
         let isGameOver = false;
+
+        // Initialize scores
+        let topScores = JSON.parse(localStorage.getItem('topScores')) || [0, 0, 0];
+
+        function updateScoreboard() {
+            const topScoresList = document.getElementById('topScores');
+            topScoresList.innerHTML = '';
+            topScores.forEach((score, index) => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `#${index + 1}: ${score}`;
+                topScoresList.appendChild(listItem);
+            });
+        }
+
+        function saveScore(score) {
+            topScores.push(score);
+            topScores.sort((a, b) => b - a); // Sort scores in descending order
+            topScores = topScores.slice(0, 3); // Keep only the top 3 scores
+            localStorage.setItem('topScores', JSON.stringify(topScores));
+        }
 
         // Event listener for paddle movement
         document.addEventListener('keydown', (event) => {
@@ -106,6 +148,12 @@
             // Draw net
             ctx.fillStyle = 'white'; // Net color
             ctx.fillRect(canvas.width / 2 - netWidth / 2, 0, netWidth, netHeight);
+
+            // Draw moving blocks
+            ctx.fillStyle = 'red'; // Block color
+            blocks.forEach(block => {
+                ctx.fillRect(block.x, block.y, block.width, block.height);
+            });
 
             // Draw paddles
             ctx.fillStyle = 'red'; // Player paddle color
@@ -166,10 +214,31 @@
                 }
             }
 
+            // Ball collision with moving blocks
+            blocks.forEach(block => {
+                if (ball.x + ball.size > block.x &&
+                    ball.x - ball.size < block.x + block.width &&
+                    ball.y + ball.size > block.y &&
+                    ball.y - ball.size < block.y + block.height) {
+                    ballSpeedX = -ballSpeedX;
+                }
+            });
+
             // Ball out of bounds
             if (ball.x - ball.size < 0 || ball.x + ball.size > canvas.width) {
                 endGame();
             }
+        }
+
+        function updateBlocks() {
+            blocks.forEach(block => {
+                block.x += block.dx;
+
+                // Reverse direction if block hits the edge
+                if (block.x <= 0 || block.x + block.width >= canvas.width) {
+                    block.dx = -block.dx;
+                }
+            });
         }
 
         function updateOpponentPaddle() {
@@ -188,6 +257,9 @@
 
         function endGame() {
             isGameOver = true;
+            // Save the score if it's a top score
+            saveScore(hitCount);
+            updateScoreboard();
             document.getElementById('gameOverOverlay').style.display = 'flex';
         }
 
@@ -195,10 +267,14 @@
             if (!isGameOver) {
                 draw();
                 updateBall();
+                updateBlocks();
                 updateOpponentPaddle();
                 requestAnimationFrame(gameLoop);
             }
         }
+
+        // Initial scoreboard update
+        updateScoreboard();
 
         gameLoop();
     </script>
