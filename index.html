@@ -6,7 +6,7 @@
     <title>Ping Pong Game</title>
     <style>
         body { margin: 0; overflow: hidden; }
-        canvas { display: block; background: #000; }
+        canvas { display: block; background: #00f; /* Blue background */ }
         #gameOverOverlay {
             position: absolute;
             top: 0;
@@ -82,10 +82,24 @@
 
         // Event listener for paddle movement
         document.addEventListener('keydown', (event) => {
-            if (event.code === 'ArrowUp') {
+            if (event.code === 'ArrowUp' || event.code === 'KeyW') {
                 playerPaddle.y = Math.max(0, playerPaddle.y - paddleSpeed);
-            } else if (event.code === 'ArrowDown') {
+            } else if (event.code === 'ArrowDown' || event.code === 'KeyS') {
                 playerPaddle.y = Math.min(canvas.height - paddleHeight, playerPaddle.y + paddleSpeed);
+            } else if (event.code === 'KeyA') {
+                playerPaddle.x = Math.max(0, playerPaddle.x - paddleSpeed); // Move left
+            } else if (event.code === 'KeyD') {
+                playerPaddle.x = Math.min(canvas.width - paddleWidth, playerPaddle.x + paddleSpeed); // Move right
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            // Prevent continuous movement after key is released
+            if (event.code === 'ArrowUp' || event.code === 'KeyW' || event.code === 'ArrowDown' || event.code === 'KeyS') {
+                playerPaddle.y = playerPaddle.y; // Ensures movement stops when key is released
+            }
+            if (event.code === 'KeyA' || event.code === 'KeyD') {
+                playerPaddle.x = playerPaddle.x; // Ensures movement stops when key is released
             }
         });
 
