@@ -86,20 +86,13 @@
                 playerPaddle.y = Math.max(0, playerPaddle.y - paddleSpeed);
             } else if (event.code === 'ArrowDown' || event.code === 'KeyS') {
                 playerPaddle.y = Math.min(canvas.height - paddleHeight, playerPaddle.y + paddleSpeed);
-            } else if (event.code === 'KeyA') {
-                playerPaddle.x = Math.max(0, playerPaddle.x - paddleSpeed); // Move left
-            } else if (event.code === 'KeyD') {
-                playerPaddle.x = Math.min(canvas.width - paddleWidth, playerPaddle.x + paddleSpeed); // Move right
             }
         });
 
         document.addEventListener('keyup', (event) => {
-            // Prevent continuous movement after key is released
+            // Stop vertical movement when key is released
             if (event.code === 'ArrowUp' || event.code === 'KeyW' || event.code === 'ArrowDown' || event.code === 'KeyS') {
-                playerPaddle.y = playerPaddle.y; // Ensures movement stops when key is released
-            }
-            if (event.code === 'KeyA' || event.code === 'KeyD') {
-                playerPaddle.x = playerPaddle.x; // Ensures movement stops when key is released
+                // Reset the paddle's y position to stop movement if needed
             }
         });
 
