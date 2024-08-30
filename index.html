@@ -103,7 +103,12 @@
         const blockHeight = 10;
         const blockSpeed = 2;
         let blocks = [
-            { x: canvas.width / 2 - blockWidth / 2, y: 50, width: blockWidth, height: blockHeight, dx: blockSpeed }
+            // Top blocks
+            { x: canvas.width / 2 - blockWidth / 2, y: 50, width: blockWidth, height: blockHeight, dx: blockSpeed, dy: 0 },
+            { x: canvas.width / 2 - blockWidth / 2, y: 60 + blockHeight, width: blockWidth, height: blockHeight, dx: blockSpeed, dy: 0 },
+            // Bottom blocks
+            { x: canvas.width / 2 - blockWidth / 2, y: canvas.height - 50 - blockHeight, width: blockWidth, height: blockHeight, dx: blockSpeed, dy: 0 },
+            { x: canvas.width / 2 - blockWidth / 2, y: canvas.height - 60 - 2 * blockHeight, width: blockWidth, height: blockHeight, dx: blockSpeed, dy: 0 }
         ];
 
         // Game state
