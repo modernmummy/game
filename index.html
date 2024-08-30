@@ -7,7 +7,7 @@
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; background: #00f; /* Blue background */ }
-        #gameOverOverlay, #congratulationsOverlay {
+        #gameOverOverlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -21,7 +21,7 @@
             text-align: center;
             font-family: Arial, sans-serif;
         }
-        #gameOverOverlay button, #congratulationsOverlay button {
+        #gameOverOverlay button {
             padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
@@ -46,12 +46,6 @@
     <div id="gameOverOverlay">
         <div>
             <h1>Game Over</h1>
-            <button onclick="restartGame()">Restart</button>
-        </div>
-    </div>
-    <div id="congratulationsOverlay">
-        <div>
-            <h1>Congratulations, You Won!</h1>
             <button onclick="restartGame()">Restart</button>
         </div>
     </div>
@@ -138,7 +132,6 @@
 
         // Game state
         let isGameOver = false;
-        let isPlayerWinning = false;
 
         // Initialize scores
         let topScores = JSON.parse(localStorage.getItem('topScores')) || [0, 0, 0];
@@ -160,17 +153,6 @@
             localStorage.setItem('topScores', JSON.stringify(topScores));
         }
 
-        function randomizeBallStart() {
-            // Randomly give the ball to the player or the AI
-            if (Math.random() < 0.5) {
-                ballSpeedX = 5;
-                ballSpeedY = 3;
-            } else {
-                ballSpeedX = -5;
-                ballSpeedY = -3;
-            }
-        }
-
         // Event listener for paddle movement
         document.addEventListener('keydown', (event) => {
             if (event.code === 'ArrowUp' || event.code === 'KeyW') {
@@ -181,16 +163,7 @@
         });
 
         function restartGame() {
-            isGameOver = false;
-            isPlayerWinning = false;
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-            playerPaddle.y = canvas.height / 2 - paddleHeight / 2;
-            opponentPaddle.y = canvas.height / 2 - paddleHeight / 2;
-            randomizeBallStart(); // Randomize ball direction at the start
-            document.getElementById('gameOverOverlay').style.display = 'none';
-            document.getElementById('congratulationsOverlay').style.display = 'none';
-            gameLoop();
+            location.reload(); // Reload the page to restart the game
         }
 
         function draw() {
@@ -276,11 +249,7 @@
             });
 
             // Ball out of bounds
-            if (ball.x - ball.size < 0) {
-                isPlayerWinning = true;
-                endGame();
-            } else if (ball.x + ball.size > canvas.width) {
-                isPlayerWinning = false;
+            if (ball.x - ball.size < 0 || ball.x + ball.size > canvas.width) {
                 endGame();
             }
         }
@@ -315,15 +284,11 @@
         }
 
         function endGame() {
-            if (isPlayerWinning) {
-                document.getElementById('congratulationsOverlay').style.display = 'flex';
-            } else {
-                document.getElementById('gameOverOverlay').style.display = 'flex';
-            }
-
+            isGameOver = true;
             // Save the score if it's a top score
             saveScore(hitCount);
             updateScoreboard();
+            document.getElementById('gameOverOverlay').style.display = 'flex';
         }
 
         function gameLoop() {
@@ -339,8 +304,6 @@
         // Initial scoreboard update
         updateScoreboard();
 
-        // Start the game loop
-        randomizeBallStart(); // Randomize ball direction at the start
         gameLoop();
     </script>
 </body>
