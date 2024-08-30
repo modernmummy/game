@@ -7,7 +7,7 @@
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; background: #00f; /* Blue background */ }
-        #gameOverOverlay {
+        #gameOverOverlay, #congratulationsOverlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -21,7 +21,7 @@
             text-align: center;
             font-family: Arial, sans-serif;
         }
-        #gameOverOverlay button {
+        #gameOverOverlay button, #congratulationsOverlay button {
             padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
@@ -49,6 +49,12 @@
             <button onclick="restartGame()">Restart</button>
         </div>
     </div>
+    <div id="congratulationsOverlay">
+        <div>
+            <h1>Congratulations, You Won!</h1>
+            <button onclick="restartGame()">Restart</button>
+        </div>
+    </div>
     <canvas id="gameCanvas"></canvas>
     <script>
         // Canvas setup
@@ -70,6 +76,9 @@
         const ballSize = 10;
         let ballSpeedX = 5;
         let ballSpeedY = 3;
+        const maxBallSpeed = 15; // Maximum speed of the ball
+        const initialBallSpeedX = 5;
+        const initialBallSpeedY = 3;
         const difficultyIncreaseInterval = 5; // Increase difficulty every 5 hits
         let hitCount = 0;
 
@@ -132,6 +141,7 @@
 
         // Game state
         let isGameOver = false;
+        let isPlayerWinning = false;
 
         // Initialize scores
         let topScores = JSON.parse(localStorage.getItem('topScores')) || [0, 0, 0];
@@ -153,6 +163,24 @@
             localStorage.setItem('topScores', JSON.stringify(topScores));
         }
 
+        function randomizeBallStart() {
+            // Randomly give the ball to the player or the AI
+            if (Math.random() < 0.5) {
+                ballSpeedX = initialBallSpeedX;
+                ballSpeedY = initialBallSpeedY;
+            } else {
+                ballSpeedX = -initialBallSpeedX;
+                ballSpeedY = -initialBallSpeedY;
+            }
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ballSpeedX = initialBallSpeedX;
+            ballSpeedY = initialBallSpeedY;
+        }
+
         // Event listener for paddle movement
         document.addEventListener('keydown', (event) => {
             if (event.code === 'ArrowUp' || event.code === 'KeyW') {
@@ -163,7 +191,15 @@
         });
 
         function restartGame() {
-            location.reload(); // Reload the page to restart the game
+            isGameOver = false;
+            isPlayerWinning = false;
+            resetBall(); // Reset ball to initial speed
+            playerPaddle.y = canvas.height / 2 - paddleHeight / 2;
+            opponentPaddle.y = canvas.height / 2 - paddleHeight / 2;
+            randomizeBallStart(); // Randomize ball direction at the start
+            document.getElementById('gameOverOverlay').style.display = 'none';
+            document.getElementById('congratulationsOverlay').style.display = 'none';
+            gameLoop();
         }
 
         function draw() {
@@ -218,6 +254,9 @@
                 if (hitCount % difficultyIncreaseInterval === 0) {
                     ballSpeedX *= 1.1; // Increase ball speed
                     ballSpeedY *= 1.1; // Increase ball speed
+                    // Limit ball speed
+                    ballSpeedX = Math.min(ballSpeedX, maxBallSpeed);
+                    ballSpeedY = Math.min(ballSpeedY, maxBallSpeed);
                 }
                 if (hitCount % paddleSpeedIncreaseInterval === 0) {
                     paddleSpeed *= 1.1; // Increase paddle speed
@@ -232,6 +271,9 @@
                 if (hitCount % difficultyIncreaseInterval === 0) {
                     ballSpeedX *= 1.1; // Increase ball speed
                     ballSpeedY *= 1.1; // Increase ball speed
+                    // Limit ball speed
+                    ballSpeedX = Math.min(ballSpeedX, maxBallSpeed);
+                    ballSpeedY = Math.min(ballSpeedY, maxBallSpeed);
                 }
                 if (hitCount % paddleSpeedIncreaseInterval === 0) {
                     paddleSpeed *= 1.1; // Increase paddle speed
@@ -249,7 +291,11 @@
             });
 
             // Ball out of bounds
-            if (ball.x - ball.size < 0 || ball.x + ball.size > canvas.width) {
+            if (ball.x - ball.size < 0) {
+                isPlayerWinning = false;
+                endGame();
+            } else if (ball.x + ball.size > canvas.width) {
+                isPlayerWinning = true;
                 endGame();
             }
         }
@@ -284,11 +330,15 @@
         }
 
         function endGame() {
-            isGameOver = true;
+            if (isPlayerWinning) {
+                document.getElementById('congratulationsOverlay').style.display = 'flex';
+            } else {
+                document.getElementById('gameOverOverlay').style.display = 'flex';
+            }
+
             // Save the score if it's a top score
             saveScore(hitCount);
             updateScoreboard();
-            document.getElementById('gameOverOverlay').style.display = 'flex';
         }
 
         function gameLoop() {
@@ -304,6 +354,8 @@
         // Initial scoreboard update
         updateScoreboard();
 
+        // Start the game loop
+        randomizeBallStart(); // Randomize ball direction at the start
         gameLoop();
     </script>
 </body>
