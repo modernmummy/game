@@ -46,7 +46,7 @@
         // Paddle settings
         let paddleWidth = 10;
         let paddleHeight = 100;
-        let paddleSpeed = 15;
+        let paddleSpeed = 10;
         const paddleSpeedIncreaseInterval = 5; // Increase paddle speed every 5 hits
 
         // Ball settings
@@ -104,13 +104,16 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Draw paddles
-            ctx.fillStyle = 'white';
+            ctx.fillStyle = 'red'; // Player paddle color
             ctx.fillRect(playerPaddle.x, playerPaddle.y, playerPaddle.width, playerPaddle.height);
+
+            ctx.fillStyle = 'black'; // Opponent paddle color
             ctx.fillRect(opponentPaddle.x, opponentPaddle.y, opponentPaddle.width, opponentPaddle.height);
 
             // Draw ball
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
+            ctx.fillStyle = 'white'; // Ball color
             ctx.fill();
             ctx.closePath();
 
