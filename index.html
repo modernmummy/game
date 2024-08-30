@@ -105,76 +105,73 @@
             ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
             ctx.fill();
             ctx.closePath();
+
+            // Draw scoreboard
+            ctx.fillStyle = 'white';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Hits: ' + hitCount, canvas.width / 2, 30);
         }
 
-        function update() {
-            if (isGameOver) return;
-
-            // Update ball position
+        function updateBall() {
             ball.x += ballSpeedX;
             ball.y += ballSpeedY;
 
             // Ball collision with top and bottom walls
-            if (ball.y - ball.size <= 0 || ball.y + ball.size >= canvas.height) {
+            if (ball.y - ball.size < 0 || ball.y + ball.size > canvas.height) {
                 ballSpeedY = -ballSpeedY;
             }
 
             // Ball collision with paddles
-            if (
-                (ball.x - ball.size <= playerPaddle.x + playerPaddle.width &&
-                ball.y >= playerPaddle.y &&
-                ball.y <= playerPaddle.y + playerPaddle.height) ||
-                (ball.x + ball.size >= opponentPaddle.x &&
-                ball.y >= opponentPaddle.y &&
-                ball.y <= opponentPaddle.y + opponentPaddle.height)
-            ) {
+            if (ball.x - ball.size < playerPaddle.x + playerPaddle.width &&
+                ball.y > playerPaddle.y &&
+                ball.y < playerPaddle.y + playerPaddle.height) {
                 ballSpeedX = -ballSpeedX;
                 hitCount++;
-
-                // Increase difficulty every few hits
                 if (hitCount % difficultyIncreaseInterval === 0) {
-                    ballSpeedX *= 1.1; // Increase speed by 10%
-                    ballSpeedY *= 1.1; // Increase speed by 10%
+                    ballSpeedX *= 1.1; // Increase speed
+                    ballSpeedY *= 1.1; // Increase speed
                 }
             }
 
-            // Ball out of bounds (left and right sides)
-            if (ball.x - ball.size <= 0 || ball.x + ball.size >= canvas.width) {
-                showGameOver();
+            if (ball.x + ball.size > opponentPaddle.x &&
+                ball.y > opponentPaddle.y &&
+                ball.y < opponentPaddle.y + opponentPaddle.height) {
+                ballSpeedX = -ballSpeedX;
             }
 
-            // Move opponent paddle
-            if (ball.y < opponentPaddle.y + opponentPaddle.height / 2) {
-                opponentPaddle.y = Math.max(0, opponentPaddle.y - paddleSpeed * 0.7); // Adjust speed for opponent paddle
-            } else {
-                opponentPaddle.y = Math.min(canvas.height - paddleHeight, opponentPaddle.y + paddleSpeed * 0.7); // Adjust speed for opponent paddle
+            // Ball out of bounds
+            if (ball.x - ball.size < 0 || ball.x + ball.size > canvas.width) {
+                endGame();
             }
         }
 
-        function showGameOver() {
+        function updateOpponentPaddle() {
+            // Simple AI for opponent paddle
+            if (ball.y < opponentPaddle.y) {
+                opponentPaddle.y -= paddleSpeed / 2;
+            } else if (ball.y > opponentPaddle.y + paddleHeight) {
+                opponentPaddle.y += paddleSpeed / 2;
+            }
+            // Keep opponent paddle within canvas bounds
+            opponentPaddle.y = Math.max(0, Math.min(canvas.height - paddleHeight, opponentPaddle.y));
+        }
+
+        function endGame() {
             isGameOver = true;
             document.getElementById('gameOverOverlay').style.display = 'flex';
         }
 
         function gameLoop() {
-            if (isGameOver) return;
-
-            draw();
-            update();
-            requestAnimationFrame(gameLoop);
+            if (!isGameOver) {
+                draw();
+                updateBall();
+                updateOpponentPaddle();
+                requestAnimationFrame(gameLoop);
+            }
         }
 
         gameLoop();
-
-        // Handle window resizing
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            playerPaddle.y = canvas.height / 2 - paddleHeight / 2;
-            opponentPaddle.y = canvas.height / 2 - paddleHeight / 2;
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-        });
     </script>
 </body>
 </html>
