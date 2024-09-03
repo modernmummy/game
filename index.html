@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time-Travel Shooter</title>
+    <title>TimeWave: Arena Clash</title>
     <style>
         body {
             margin: 0;
@@ -33,31 +33,50 @@
             color: 'blue'
         };
         
-        const bullets = [];
+        let bullets = [];
         const bulletSpeed = 7;
-        
+        const paint = [];
+        const timeShifts = ['prehistoric', 'medieval', 'futuristic'];
+        let currentTimeShift = 0;
+
         function drawPlayer() {
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x, player.y, player.width, player.height);
         }
-        
+
         function drawBullets() {
             ctx.fillStyle = 'red';
             bullets.forEach(bullet => {
                 ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
                 bullet.y -= bulletSpeed;
+                // Add paint coverage
+                paint.push({ x: bullet.x, y: bullet.y, width: bullet.width, height: bullet.height });
             });
-            // Remove bullets that have gone off-screen
             bullets = bullets.filter(bullet => bullet.y + bullet.height > 0);
         }
-        
+
+        function drawPaint() {
+            paint.forEach(area => {
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.5)'; // Semi-transparent red
+                ctx.fillRect(area.x, area.y, area.width, area.height);
+            });
+        }
+
+        function drawArena() {
+            const colors = ['#FF5722', '#4CAF50', '#03A9F4']; // Colors for different time shifts
+            ctx.fillStyle = colors[currentTimeShift];
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
         function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawArena();
+            drawPaint();
             drawPlayer();
             drawBullets();
             requestAnimationFrame(update);
         }
-        
+
         function handleKeyDown(e) {
             switch (e.key) {
                 case 'ArrowLeft':
@@ -69,11 +88,13 @@
                 case ' ':
                     bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20 });
                     break;
+                case 't':
+                    currentTimeShift = (currentTimeShift + 1) % timeShifts.length;
+                    break;
             }
         }
-        
+
         document.addEventListener('keydown', handleKeyDown);
-        
         update();
     </script>
 </body>
