@@ -13,10 +13,24 @@
         canvas {
             display: block;
         }
+        #colorPicker {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+        #eraserButton {
+            position: absolute;
+            top: 10px;
+            left: 150px;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
+    <input type="color" id="colorPicker" value="#FF0000">
+    <button id="eraserButton">Eraser</button>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -35,7 +49,9 @@
         
         let bullets = [];
         const bulletSpeed = 7;
-        const paint = [];
+        let paint = [];
+        let isEraser = false;
+        let currentColor = document.getElementById('colorPicker').value;
         const timeShifts = ['prehistoric', 'medieval', 'futuristic'];
         let currentTimeShift = 0;
 
@@ -45,19 +61,19 @@
         }
 
         function drawBullets() {
-            ctx.fillStyle = 'red';
+            ctx.fillStyle = currentColor;
             bullets.forEach(bullet => {
                 ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
                 bullet.y -= bulletSpeed;
                 // Add paint coverage
-                paint.push({ x: bullet.x, y: bullet.y, width: bullet.width, height: bullet.height });
+                paint.push({ x: bullet.x, y: bullet.y, width: bullet.width, height: bullet.height, color: currentColor });
             });
             bullets = bullets.filter(bullet => bullet.y + bullet.height > 0);
         }
 
         function drawPaint() {
             paint.forEach(area => {
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.5)'; // Semi-transparent red
+                ctx.fillStyle = area.color;
                 ctx.fillRect(area.x, area.y, area.width, area.height);
             });
         }
@@ -94,7 +110,34 @@
             }
         }
 
+        function handleMouseMove(e) {
+            if (isEraser) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(x, y, 20, 0, Math.PI * 2, false);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+        }
+
+        function handleColorChange(e) {
+            currentColor = e.target.value;
+        }
+
+        function toggleEraser() {
+            isEraser = !isEraser;
+            document.getElementById('eraserButton').textContent = isEraser ? 'Paint' : 'Eraser';
+        }
+
         document.addEventListener('keydown', handleKeyDown);
+        document.getElementById('colorPicker').addEventListener('input', handleColorChange);
+        document.getElementById('eraserButton').addEventListener('click', toggleEraser);
+        document.addEventListener('mousemove', handleMouseMove);
+
         update();
     </script>
 </body>
