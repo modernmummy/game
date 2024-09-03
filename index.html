@@ -47,6 +47,12 @@
             color: 'blue'
         };
         
+        const eraser = {
+            x: canvas.width / 2 - 25,
+            width: 50,
+            height: canvas.height
+        };
+        
         let bullets = [];
         const bulletSpeed = 7;
         let paint = [];
@@ -84,12 +90,18 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
+        function drawEraser() {
+            ctx.fillStyle = 'blue'; // Color for the eraser cube
+            ctx.fillRect(eraser.x, 0, eraser.width, canvas.height);
+        }
+
         function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawArena();
             drawPaint();
             drawPlayer();
             drawBullets();
+            drawEraser();
             requestAnimationFrame(update);
         }
 
@@ -102,7 +114,11 @@
                     player.x = Math.min(player.x + player.speed, canvas.width - player.width);
                     break;
                 case ' ':
-                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20 });
+                    if (isEraser) {
+                        eraseColumn();
+                    } else {
+                        bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20 });
+                    }
                     break;
                 case 't':
                     currentTimeShift = (currentTimeShift + 1) % timeShifts.length;
@@ -110,17 +126,19 @@
             }
         }
 
+        function eraseColumn() {
+            paint = paint.filter(area => {
+                return !(area.x >= eraser.x && area.x + area.width <= eraser.x + eraser.width);
+            });
+        }
+
         function handleMouseMove(e) {
             if (isEraser) {
                 const rect = canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(x, y, 20, 0, Math.PI * 2, false);
-                ctx.fill();
-                ctx.globalCompositeOperation = 'source-over';
+
+                // Align the eraser with the mouse x position
+                eraser.x = Math.floor(x / eraser.width) * eraser.width;
             }
         }
 
