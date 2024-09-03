@@ -3,345 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ping Pong Game</title>
+    <title>Time-Travel Shooter</title>
     <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { display: block; background: #00f; /* Blue background */ }
-        #gameOverOverlay, #congratulationsOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            font-family: Arial, sans-serif;
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
         }
-        #gameOverOverlay button, #congratulationsOverlay button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        #scoreboard {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: white;
-            font-family: Arial, sans-serif;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 5px;
+        canvas {
+            display: block;
         }
     </style>
 </head>
 <body>
-    <div id="scoreboard">
-        <h2>Top Scores</h2>
-        <ol id="topScores"></ol>
-    </div>
-    <div id="gameOverOverlay">
-        <div>
-            <h1>Game Over</h1>
-            <button onclick="restartGame()">Restart</button>
-        </div>
-    </div>
-    <div id="congratulationsOverlay">
-        <div>
-            <h1>Congratulations, You Won!</h1>
-            <button onclick="restartGame()">Restart</button>
-        </div>
-    </div>
     <canvas id="gameCanvas"></canvas>
     <script>
-        // Canvas setup
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-
-        // Paddle settings
-        let paddleWidth = 10;
-        let paddleHeight = 100;
-        let paddleSpeed = 10;
-        const paddleSpeedIncreaseInterval = 5; // Increase paddle speed every 5 hits
-
-        // AI Paddle settings
-        const aiPaddleSpeedMultiplier = 1.5; // AI paddle is 1.5x faster than player paddle
-
-        // Ball settings
-        const ballSize = 10;
-        let ballSpeedX = 5;
-        let ballSpeedY = 3;
-        const difficultyIncreaseInterval = 5; // Increase difficulty every 5 hits
-        let hitCount = 0;
-
-        // Paddle and Ball positions
-        const playerPaddle = {
-            x: 10,
-            y: canvas.height / 2 - paddleHeight / 2,
-            width: paddleWidth,
-            height: paddleHeight
+        
+        const player = {
+            x: canvas.width / 2 - 25,
+            y: canvas.height - 60,
+            width: 50,
+            height: 50,
+            speed: 5,
+            color: 'blue'
         };
-
-        const opponentPaddle = {
-            x: canvas.width - 20,
-            y: canvas.height / 2 - paddleHeight / 2,
-            width: paddleWidth,
-            height: paddleHeight
-        };
-
-        const ball = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            size: ballSize
-        };
-
-        // Net settings
-        const netWidth = 10;
-        const netHeight = canvas.height;
-
-        // Moving blocks settings
-        const blockWidth = 50;
-        const blockHeight = 10;
-        const blockSpeed = 2;
-
-        function getRandomPosition() {
-            return {
-                x: Math.random() * (canvas.width - blockWidth),
-                y: Math.random() * (canvas.height - blockHeight)
-            };
+        
+        const bullets = [];
+        const bulletSpeed = 7;
+        
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
         }
-
-        function getRandomDirection() {
-            return Math.random() < 0.5 ? blockSpeed : -blockSpeed;
-        }
-
-        // Initialize moving blocks
-        let blocks = [];
-        for (let i = 0; i < 4; i++) {
-            let position = getRandomPosition();
-            let directionX = getRandomDirection();
-            let directionY = getRandomDirection();
-            blocks.push({ 
-                x: position.x, 
-                y: position.y, 
-                width: blockWidth, 
-                height: blockHeight, 
-                dx: directionX, 
-                dy: directionY 
+        
+        function drawBullets() {
+            ctx.fillStyle = 'red';
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                bullet.y -= bulletSpeed;
             });
+            // Remove bullets that have gone off-screen
+            bullets = bullets.filter(bullet => bullet.y + bullet.height > 0);
         }
-
-        // Game state
-        let isGameOver = false;
-        let isPlayerWinning = false;
-
-        // Initialize scores
-        let topScores = JSON.parse(localStorage.getItem('topScores')) || [0, 0, 0];
-
-        function updateScoreboard() {
-            const topScoresList = document.getElementById('topScores');
-            topScoresList.innerHTML = '';
-            topScores.forEach((score, index) => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `#${index + 1}: ${score}`;
-                topScoresList.appendChild(listItem);
-            });
-        }
-
-        function saveScore(score) {
-            topScores.push(score);
-            topScores.sort((a, b) => b - a); // Sort scores in descending order
-            topScores = topScores.slice(0, 3); // Keep only the top 3 scores
-            localStorage.setItem('topScores', JSON.stringify(topScores));
-        }
-
-        function randomizeBallStart() {
-            // Randomly give the ball to the player or the AI
-            if (Math.random() < 0.5) {
-                ballSpeedX = 5;
-                ballSpeedY = 3;
-            } else {
-                ballSpeedX = -5;
-                ballSpeedY = -3;
-            }
-        }
-
-        // Event listener for paddle movement
-        document.addEventListener('keydown', (event) => {
-            if (event.code === 'ArrowUp' || event.code === 'KeyW') {
-                playerPaddle.y = Math.max(0, playerPaddle.y - paddleSpeed);
-            } else if (event.code === 'ArrowDown' || event.code === 'KeyS') {
-                playerPaddle.y = Math.min(canvas.height - paddleHeight, playerPaddle.y + paddleSpeed);
-            }
-        });
-
-        function restartGame() {
-            isGameOver = false;
-            isPlayerWinning = false;
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-            playerPaddle.y = canvas.height / 2 - paddleHeight / 2;
-            opponentPaddle.y = canvas.height / 2 - paddleHeight / 2;
-            randomizeBallStart(); // Randomize ball direction at the start
-            document.getElementById('gameOverOverlay').style.display = 'none';
-            document.getElementById('congratulationsOverlay').style.display = 'none';
-            gameLoop();
-        }
-
-        function draw() {
+        
+        function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw net
-            ctx.fillStyle = 'white'; // Net color
-            ctx.fillRect(canvas.width / 2 - netWidth / 2, 0, netWidth, netHeight);
-
-            // Draw moving blocks
-            ctx.fillStyle = 'red'; // Block color
-            blocks.forEach(block => {
-                ctx.fillRect(block.x, block.y, block.width, block.height);
-            });
-
-            // Draw paddles
-            ctx.fillStyle = 'red'; // Player paddle color
-            ctx.fillRect(playerPaddle.x, playerPaddle.y, playerPaddle.width, playerPaddle.height);
-
-            ctx.fillStyle = 'black'; // Opponent paddle color
-            ctx.fillRect(opponentPaddle.x, opponentPaddle.y, opponentPaddle.width, opponentPaddle.height);
-
-            // Draw ball
-            ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
-            ctx.fillStyle = 'white'; // Ball color
-            ctx.fill();
-            ctx.closePath();
-
-            // Draw scoreboard
-            ctx.fillStyle = 'black'; // Score text color
-            ctx.font = '24px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('Hits: ' + hitCount, canvas.width / 2, 30);
+            drawPlayer();
+            drawBullets();
+            requestAnimationFrame(update);
         }
-
-        function updateBall() {
-            ball.x += ballSpeedX;
-            ball.y += ballSpeedY;
-
-            // Ball collision with top and bottom walls
-            if (ball.y - ball.size < 0 || ball.y + ball.size > canvas.height) {
-                ballSpeedY = -ballSpeedY;
-            }
-
-            // Ball collision with paddles
-            if (ball.x - ball.size < playerPaddle.x + playerPaddle.width &&
-                ball.y > playerPaddle.y &&
-                ball.y < playerPaddle.y + playerPaddle.height) {
-                ballSpeedX = -ballSpeedX;
-                hitCount++;
-                if (hitCount % difficultyIncreaseInterval === 0) {
-                    ballSpeedX *= 1.1; // Increase ball speed
-                    ballSpeedY *= 1.1; // Increase ball speed
-                }
-                if (hitCount % paddleSpeedIncreaseInterval === 0) {
-                    paddleSpeed *= 1.1; // Increase paddle speed
-                }
-            }
-
-            if (ball.x + ball.size > opponentPaddle.x &&
-                ball.y > opponentPaddle.y &&
-                ball.y < opponentPaddle.y + opponentPaddle.height) {
-                ballSpeedX = -ballSpeedX;
-                hitCount++;
-                if (hitCount % difficultyIncreaseInterval === 0) {
-                    ballSpeedX *= 1.1; // Increase ball speed
-                    ballSpeedY *= 1.1; // Increase ball speed
-                }
-                if (hitCount % paddleSpeedIncreaseInterval === 0) {
-                    paddleSpeed *= 1.1; // Increase paddle speed
-                }
-            }
-
-            // Ball collision with moving blocks
-            blocks.forEach(block => {
-                if (ball.x + ball.size > block.x &&
-                    ball.x - ball.size < block.x + block.width &&
-                    ball.y + ball.size > block.y &&
-                    ball.y - ball.size < block.y + block.height) {
-                    ballSpeedX = -ballSpeedX;
-                }
-            });
-
-            // Ball out of bounds
-            if (ball.x - ball.size < 0) {
-                isPlayerWinning = true;
-                endGame();
-            } else if (ball.x + ball.size > canvas.width) {
-                isPlayerWinning = false;
-                endGame();
+        
+        function handleKeyDown(e) {
+            switch (e.key) {
+                case 'ArrowLeft':
+                    player.x = Math.max(player.x - player.speed, 0);
+                    break;
+                case 'ArrowRight':
+                    player.x = Math.min(player.x + player.speed, canvas.width - player.width);
+                    break;
+                case ' ':
+                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20 });
+                    break;
             }
         }
-
-        function updateBlocks() {
-            blocks.forEach(block => {
-                block.x += block.dx;
-                block.y += block.dy;
-
-                // Reverse direction if block hits the edge
-                if (block.x <= 0 || block.x + block.width >= canvas.width) {
-                    block.dx = -block.dx;
-                }
-                if (block.y <= 0 || block.y + block.height >= canvas.height) {
-                    block.dy = -block.dy;
-                }
-            });
-        }
-
-        function updateOpponentPaddle() {
-            // AI paddle speed adjustment
-            const aiPaddleSpeed = paddleSpeed * aiPaddleSpeedMultiplier;
-
-            // Simple AI for opponent paddle
-            if (ball.y < opponentPaddle.y) {
-                opponentPaddle.y -= aiPaddleSpeed;
-            } else if (ball.y > opponentPaddle.y + paddleHeight) {
-                opponentPaddle.y += aiPaddleSpeed;
-            }
-            // Keep opponent paddle within canvas bounds
-            opponentPaddle.y = Math.max(0, Math.min(canvas.height - paddleHeight, opponentPaddle.y));
-        }
-
-        function endGame() {
-            if (isPlayerWinning) {
-                document.getElementById('congratulationsOverlay').style.display = 'flex';
-            } else {
-                document.getElementById('gameOverOverlay').style.display = 'flex';
-            }
-
-            // Save the score if it's a top score
-            saveScore(hitCount);
-            updateScoreboard();
-        }
-
-        function gameLoop() {
-            if (!isGameOver) {
-                draw();
-                updateBall();
-                updateBlocks();
-                updateOpponentPaddle();
-                requestAnimationFrame(gameLoop);
-            }
-        }
-
-        // Initial scoreboard update
-        updateScoreboard();
-
-        // Start the game loop
-        randomizeBallStart(); // Randomize ball direction at the start
-        gameLoop();
+        
+        document.addEventListener('keydown', handleKeyDown);
+        
+        update();
     </script>
 </body>
 </html>
