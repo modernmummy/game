@@ -3,160 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TimeWave: Arena Clash</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: #000;
-        }
-        canvas {
-            display: block;
-        }
-        #colorPicker {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 10;
-        }
-        #eraserButton {
-            position: absolute;
-            top: 10px;
-            left: 150px;
-            z-index: 10;
-        }
-    </style>
+    <title>Rogue Galaxy</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <input type="color" id="colorPicker" value="#FF0000">
-    <button id="eraserButton">Eraser</button>
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const player = {
-            x: canvas.width / 2 - 25,
-            y: canvas.height - 60,
-            width: 50,
-            height: 50,
-            speed: 5,
-            color: 'blue'
-        };
-        
-        const eraser = {
-            x: canvas.width / 2 - 25,
-            width: 50,
-            height: canvas.height
-        };
-        
-        let bullets = [];
-        const bulletSpeed = 7;
-        let paint = [];
-        let isEraser = false;
-        let currentColor = document.getElementById('colorPicker').value;
-        const timeShifts = ['prehistoric', 'medieval', 'futuristic'];
-        let currentTimeShift = 0;
+    <header>
+        <h1>Welcome to Rogue Galaxy</h1>
+        <nav>
+            <ul>
+                <li><a href="#about">About</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#download">Download</a></li>
+            </ul>
+        </nav>
+    </header>
 
-        function drawPlayer() {
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-        }
+    <main>
+        <section id="about">
+            <h2>About the Game</h2>
+            <p>Rogue Galaxy is an action-packed space adventure where you navigate through a galaxy filled with pirates and alien creatures. Will you retrieve the stolen artifact?</p>
+        </section>
 
-        function drawBullets() {
-            ctx.fillStyle = currentColor;
-            bullets.forEach(bullet => {
-                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-                bullet.y -= bulletSpeed;
-                // Add paint coverage
-                paint.push({ x: bullet.x, y: bullet.y, width: bullet.width, height: bullet.height, color: currentColor });
-            });
-            bullets = bullets.filter(bullet => bullet.y + bullet.height > 0);
-        }
+        <section id="features">
+            <h2>Game Features</h2>
+            <ul>
+                <li>Fast-paced ship combat</li>
+                <li>Diverse planet exploration</li>
+                <li>Upgrades and customization</li>
+                <li>Multiplayer co-op and PvP modes</li>
+            </ul>
+        </section>
 
-        function drawPaint() {
-            paint.forEach(area => {
-                ctx.fillStyle = area.color;
-                ctx.fillRect(area.x, area.y, area.width, area.height);
-            });
-        }
+        <section id="download">
+            <h2>Download the Game</h2>
+            <p>Coming soon! Stay tuned for updates.</p>
+        </section>
+    </main>
 
-        function drawArena() {
-            const colors = ['#FF5722', '#4CAF50', '#03A9F4']; // Colors for different time shifts
-            ctx.fillStyle = colors[currentTimeShift];
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        function drawEraser() {
-            ctx.fillStyle = 'blue'; // Color for the eraser cube
-            ctx.fillRect(eraser.x, 0, eraser.width, canvas.height);
-        }
-
-        function update() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawArena();
-            drawPaint();
-            drawPlayer();
-            drawBullets();
-            drawEraser();
-            requestAnimationFrame(update);
-        }
-
-        function handleKeyDown(e) {
-            switch (e.key) {
-                case 'ArrowLeft':
-                    player.x = Math.max(player.x - player.speed, 0);
-                    break;
-                case 'ArrowRight':
-                    player.x = Math.min(player.x + player.speed, canvas.width - player.width);
-                    break;
-                case ' ':
-                    if (isEraser) {
-                        eraseColumn();
-                    } else {
-                        bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20 });
-                    }
-                    break;
-                case 't':
-                    currentTimeShift = (currentTimeShift + 1) % timeShifts.length;
-                    break;
-            }
-        }
-
-        function eraseColumn() {
-            paint = paint.filter(area => {
-                return !(area.x >= eraser.x && area.x + area.width <= eraser.x + eraser.width);
-            });
-        }
-
-        function handleMouseMove(e) {
-            if (isEraser) {
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-
-                // Align the eraser with the mouse x position
-                eraser.x = Math.floor(x / eraser.width) * eraser.width;
-            }
-        }
-
-        function handleColorChange(e) {
-            currentColor = e.target.value;
-        }
-
-        function toggleEraser() {
-            isEraser = !isEraser;
-            document.getElementById('eraserButton').textContent = isEraser ? 'Paint' : 'Eraser';
-        }
-
-        document.addEventListener('keydown', handleKeyDown);
-        document.getElementById('colorPicker').addEventListener('input', handleColorChange);
-        document.getElementById('eraserButton').addEventListener('click', toggleEraser);
-        document.addEventListener('mousemove', handleMouseMove);
-
-        update();
-    </script>
+    <footer>
+        <p>&copy; 2024 Rogue Galaxy. All rights reserved.</p>
+    </footer>
 </body>
 </html>
