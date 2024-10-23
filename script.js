@@ -3,9 +3,9 @@ const ctx = canvas.getContext('2d');
 
 let player = {
     x: canvas.width / 2,
-    y: canvas.height - 60,
+    y: canvas.height - 70,
     width: 50,
-    height: 50,
+    height: 30,
     speed: 5,
     health: 100,
 };
@@ -14,13 +14,15 @@ let bullets = [];
 let enemies = [];
 let score = 0;
 let gameOver = false;
+let keys = {};
 
+// Create enemy function remains the same
 function createEnemy() {
     const enemy = {
         x: Math.random() * (canvas.width - 50),
         y: -50,
         width: 50,
-        height: 50,
+        height: 30,
         speed: 2 + Math.random() * 2,
     };
     enemies.push(enemy);
@@ -29,45 +31,31 @@ function createEnemy() {
 setInterval(createEnemy, 1000); // Create a new enemy every second
 
 document.addEventListener('keydown', (event) => {
-    if (gameOver) return;
+    keys[event.key] = true; // Track pressed keys
+});
 
-    switch (event.key) {
-        case 'ArrowUp':
-            player.y -= player.speed;
-            break;
-        case 'ArrowDown':
-            player.y += player.speed;
-            break;
-        case 'ArrowLeft':
-            player.x -= player.speed;
-            break;
-        case 'ArrowRight':
-            player.x += player.speed;
-            break;
-        case ' ': // Space bar to shoot
-            bullets.push({ x: player.x + player.width / 2, y: player.y, speed: 10 });
-            break;
-    }
-
-    // Keep player within canvas bounds
-    player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-    player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+document.addEventListener('keyup', (event) => {
+    keys[event.key] = false; // Track released keys
 });
 
 function update() {
+    // Player movement based on pressed keys
+    if (keys['ArrowUp'] && player.y > 0) player.y -= player.speed;
+    if (keys['ArrowDown'] && player.y < canvas.height - player.height) player.y += player.speed;
+    if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
+    if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += player.speed;
+    if (keys[' ']) bullets.push({ x: player.x + player.width / 2, y: player.y, speed: 10 });
+
     // Move bullets
     bullets.forEach((bullet, index) => {
         bullet.y -= bullet.speed;
-        if (bullet.y < 0) {
-            bullets.splice(index, 1); // Remove bullet if it goes off screen
-        }
+        if (bullet.y < 0) bullets.splice(index, 1); // Remove bullet if it goes off screen
     });
 
     // Move enemies
     enemies.forEach((enemy, index) => {
         enemy.y += enemy.speed;
-
-        // Check for collision with player
+        // Collision detection
         if (
             enemy.x < player.x + player.width &&
             enemy.x + enemy.width > player.x &&
@@ -76,20 +64,15 @@ function update() {
         ) {
             player.health -= 20;
             enemies.splice(index, 1); // Remove enemy on collision
-
-            if (player.health <= 0) {
-                gameOver = true;
-            }
+            if (player.health <= 0) gameOver = true;
         }
-
-        // Check if enemy goes off screen
         if (enemy.y > canvas.height) {
             enemies.splice(index, 1);
             score += 10; // Increase score for surviving
         }
     });
 
-    // Check bullet collisions with enemies
+    // Bullet collision with enemies
     bullets.forEach((bullet, bulletIndex) => {
         enemies.forEach((enemy, enemyIndex) => {
             if (
@@ -109,9 +92,14 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
-    // Draw player
+    // Draw player as a fighter jet (simplified)
     ctx.fillStyle = 'blue';
-    ctx.fillRect(player.x, player.y, player.width, player.height);
+    ctx.beginPath();
+    ctx.moveTo(player.x, player.y); // Nose
+    ctx.lineTo(player.x + player.width / 2, player.y + player.height); // Wing
+    ctx.lineTo(player.x - player.width / 2, player.y + player.height); // Wing
+    ctx.closePath();
+    ctx.fill();
 
     // Draw bullets
     ctx.fillStyle = 'red';
@@ -126,7 +114,7 @@ function draw() {
     });
 
     // Draw score and health
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = 'black';
     ctx.font = '20px Arial';
     ctx.fillText(`Score: ${score}`, 10, 20);
     ctx.fillText(`Health: ${player.health}`, 10, 40);
