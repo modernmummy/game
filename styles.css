@@ -9,4 +9,5 @@ body {
 
 canvas {
     border: 1px solid #fff;
+    background-color: #a8e6cf; /* Set background color to light green */
 }
