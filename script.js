@@ -1,62 +1,64 @@
-let currentStage = 0;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-const stages = [
-    {
-        text: "You find yourself in a spaceship. What will you do?",
-        options: [
-            { text: "Take off", nextStage: 1 },
-            { text: "Check the controls", nextStage: 2 }
-        ]
-    },
-    {
-        text: "You take off and enter space. You see two planets. Which one will you explore?",
-        options: [
-            { text: "Planet Zarnok", nextStage: 3 },
-            { text: "Planet Aelon", nextStage: 4 }
-        ]
-    },
-    {
-        text: "You check the controls and notice a warning about low fuel. You need to take off!",
-        options: [
-            { text: "Take off", nextStage: 1 }
-        ]
-    },
-    {
-        text: "You land on Zarnok. It's a desert planet. You find a hidden treasure!",
-        options: [
-            { text: "Return to spaceship", nextStage: 1 }
-        ]
-    },
-    {
-        text: "You land on Aelon. The planet is inhabited by hostile aliens!",
-        options: [
-            { text: "Fight", nextStage: 5 },
-            { text: "Flee", nextStage: 1 }
-        ]
-    },
-    {
-        text: "You fought bravely but were overwhelmed. Game Over.",
-        options: []
+let player = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    width: 50,
+    height: 50,
+    speed: 5,
+};
+
+let bullets = [];
+
+document.addEventListener('keydown', (event) => {
+    switch(event.key) {
+        case 'ArrowUp':
+            player.y -= player.speed;
+            break;
+        case 'ArrowDown':
+            player.y += player.speed;
+            break;
+        case 'ArrowLeft':
+            player.x -= player.speed;
+            break;
+        case 'ArrowRight':
+            player.x += player.speed;
+            break;
+        case ' ': // Space bar to shoot
+            bullets.push({ x: player.x + player.width / 2, y: player.y, speed: 10 });
+            break;
     }
-];
+});
 
-function startGame() {
-    currentStage = 0;
-    showStage();
-}
-
-function showStage() {
-    const stage = stages[currentStage];
-    document.getElementById("story-text").innerText = stage.text;
-    const optionsDiv = document.getElementById("options");
-    optionsDiv.innerHTML = '';
-    stage.options.forEach(option => {
-        const button = document.createElement("button");
-        button.innerText = option.text;
-        button.onclick = () => {
-            currentStage = option.nextStage;
-            showStage();
-        };
-        optionsDiv.appendChild(button);
+function update() {
+    // Move bullets
+    bullets.forEach((bullet, index) => {
+        bullet.y -= bullet.speed;
+        if (bullet.y < 0) {
+            bullets.splice(index, 1); // Remove bullet if it goes off screen
+        }
     });
 }
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+
+    // Draw player
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Draw bullets
+    ctx.fillStyle = 'red';
+    bullets.forEach(bullet => {
+        ctx.fillRect(bullet.x, bullet.y, 5, 10);
+    });
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
