@@ -6,7 +6,7 @@ let player = {
     y: canvas.height - 70,
     width: 50,
     height: 30,
-    speed: 5,
+    speed: 8, // Increased speed
     health: 100,
 };
 
